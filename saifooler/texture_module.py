@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, TensorDataset, DataLoader
 
 from saifooler import default_renderer, default_device
 from saifooler.render_module import RenderModule
+import matplotlib.pyplot as plt
 
 
 class TextureModule(RenderModule):
@@ -13,7 +14,7 @@ class TextureModule(RenderModule):
         pass
 
     def __init__(self, mesh_path, renderer=default_renderer, device=default_device, *args, **kwargs):
-        super().__init__(mesh_path, renderer, device, *args, **kwargs)
+        super().__init__(mesh_path, renderer, device=device, *args, **kwargs)
         self.tex_filter = torch.full(self.mesh.textures.maps_padded().shape, 0.0, device=self.device, requires_grad=True)
 
     def apply_filter(self):
@@ -36,16 +37,32 @@ class TextureModule(RenderModule):
         image = self.render()
         _, target_color = batch
 
-        loss = torch.mean(torch.pow(image-target_color, 2))
+        loss = torch.mean(torch.pow(image-target_color.cuda(), 2))
         return loss
-
-    def train_dataloader(self):
-        inps = torch.tensor([[0.]], device=self.device)
-        targets = torch.tensor([[0., 1., 0.]], device=self.device)
-        dset = TensorDataset(inps, targets)
-        return DataLoader(dset, batch_size=1)
 
     def configure_optimizers(self):
         return Adam([self.tex_filter], lr=0.5)
 
+    def show_render(self):
+        image = self.render().cpu().detach().numpy()
+        plt.figure(figsize=(10, 10))
+        plt.imshow(image)
+        plt.grid("off")
+        plt.axis("off")
+        plt.show()
 
+    def show_texture(self):
+        plt.figure(figsize=(7, 7))
+        texture_image = self.apply_filter().maps_padded()
+        plt.imshow(texture_image.squeeze().detach().cpu().numpy())
+        plt.grid("off")
+        plt.axis("off")
+        plt.show()
+
+    def on_train_start(self) -> None:
+        self.show_render()
+        self.show_texture()
+
+    def on_train_end(self) -> None:
+        self.show_render()
+        self.show_texture()

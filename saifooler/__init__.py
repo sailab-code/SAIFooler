@@ -21,7 +21,7 @@ if torch.cuda.is_available():
 else:
     default_device = torch.device("cpu")
 
-R, T = look_at_view_transform(0.25, 0, 180)
+R, T = look_at_view_transform(0.5, 10, 180)
 default_camera = FoVPerspectiveCameras(device=default_device, R=R, T=T)
 
 default_raster_settings = RasterizationSettings(

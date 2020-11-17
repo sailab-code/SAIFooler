@@ -26,3 +26,6 @@ class RenderModule(pl.LightningModule):
             self.to(device)
 
         self.mesh = py3dio.load_objs_as_meshes([mesh_path], device=self.device)
+
+    def render(self):
+        return self.renderer(self.mesh)[0, ..., :3]
