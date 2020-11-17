@@ -4,32 +4,16 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 
-import saifooler
-import pytorch_lightning as pl
-import pytorch3d
-import pytorch3d.io as py3dio
-from pytorch3d.renderer import TexturesUV
-
 from saifooler import default_renderer, default_device
+from saifooler.render_module import RenderModule
 
 
-class TextureModule(pl.LightningModule):
+class TextureModule(RenderModule):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self, mesh_path, renderer=None, device=default_device, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if renderer is None:
-            self.renderer = default_renderer
-        else:
-            self.renderer = renderer
-
-        if device is None:
-            self.to(default_device)
-        else:
-            self.to(device)
-
-        self.mesh = py3dio.load_objs_as_meshes([mesh_path], device=self.device)
+    def __init__(self, mesh_path, renderer=default_renderer, device=default_device, *args, **kwargs):
+        super().__init__(mesh_path, renderer, device, *args, **kwargs)
         self.tex_filter = torch.full(self.mesh.textures.maps_padded().shape, 0.0, device=self.device, requires_grad=True)
 
     def apply_filter(self):
@@ -45,7 +29,6 @@ class TextureModule(pl.LightningModule):
         new_mesh.textures = self.apply_filter()
         return self.renderer(new_mesh)[0, ..., :3]
 
-
     def forward(self):
         return self.render()
 
@@ -58,7 +41,7 @@ class TextureModule(pl.LightningModule):
 
     def train_dataloader(self):
         inps = torch.tensor([[0.]], device=self.device)
-        targets = torch.tensor([[0.,0., 1.]], device=self.device)
+        targets = torch.tensor([[0., 1., 0.]], device=self.device)
         dset = TensorDataset(inps, targets)
         return DataLoader(dset, batch_size=1)
 

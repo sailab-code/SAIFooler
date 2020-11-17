@@ -6,10 +6,7 @@ from saifooler.texture_module import TextureModule
 import matplotlib.pyplot as plt
 
 
-mesh_path = "./candle/candle_test.obj"
-
-
-
+mesh_path = "./meshes/Candle/candle_test.obj"
 
 if __name__ == '__main__':
     tex_module = TextureModule(mesh_path)

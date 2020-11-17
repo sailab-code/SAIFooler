@@ -49,8 +49,6 @@ default_renderer = renderer = MeshRenderer(
 def set_maps(self, maps):
     from pytorch3d.renderer.mesh.textures import _pad_texture_maps
     if torch.is_tensor(maps):
-        # pyre-fixme[16]: `List` has no attribute `ndim`.
-        # pyre-fixme[16]: `List` has no attribute `shape`.
         if maps.ndim != 4 or maps.shape[0] != self._N:
             msg = "Expected maps to be of shape (N, H, W, 3); got %r"
             raise ValueError(msg % repr(maps.shape))
@@ -69,6 +67,5 @@ def set_maps(self, maps):
         self._maps_padded = maps
     else:
         raise ValueError("Expected maps to be a tensor or list.")
-
 
 TexturesUV.set_maps = set_maps
