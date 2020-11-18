@@ -4,7 +4,6 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 
-from saifooler import default_renderer, default_device
 from saifooler.render_module import RenderModule
 import matplotlib.pyplot as plt
 
@@ -13,9 +12,9 @@ class TextureModule(RenderModule):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self, mesh_path, renderer=default_renderer, device=default_device, *args, **kwargs):
-        super().__init__(mesh_path, renderer, device=device, *args, **kwargs)
-        self.tex_filter = torch.full(self.mesh.textures.maps_padded().shape, 0.0, device=self.device, requires_grad=True)
+    def __init__(self, mesh_path, renderer=None, *args, **kwargs):
+        super().__init__(mesh_path, renderer, *args, **kwargs)
+        self.tex_filter = torch.nn.Parameter(torch.full(self.mesh.textures.maps_padded().shape, 0.0, device=self.device))
 
     def apply_filter(self):
         new_textures = self.mesh.textures.clone()
@@ -37,7 +36,7 @@ class TextureModule(RenderModule):
         image = self.render()
         _, target_color = batch
 
-        loss = torch.mean(torch.pow(image-target_color.cuda(), 2))
+        loss = torch.mean(torch.pow(image-target_color, 2))
         return loss
 
     def configure_optimizers(self):

@@ -15,36 +15,6 @@ from pytorch3d.renderer import (
     TexturesVertex
 )
 
-# Setup
-if torch.cuda.is_available():
-    default_device = torch.device("cuda:0")
-else:
-    default_device = torch.device("cpu")
-
-R, T = look_at_view_transform(0.5, 10, 180)
-default_camera = FoVPerspectiveCameras(device=default_device, R=R, T=T)
-
-default_raster_settings = RasterizationSettings(
-    image_size=512,
-    blur_radius=0.0,
-    faces_per_pixel=1,
-)
-
-default_lights = PointLights(device=default_device, location=[[0.0, 0.0, -3.0]])
-
-default_renderer = renderer = MeshRenderer(
-    rasterizer=MeshRasterizer(
-        cameras=default_camera,
-        raster_settings=default_raster_settings
-    ),
-    shader=SoftPhongShader(
-        device=default_device,
-        cameras=default_camera,
-        lights=default_lights
-    )
-)
-
-
 # extend TexturesUV
 def set_maps(self, maps):
     from pytorch3d.renderer.mesh.textures import _pad_texture_maps
