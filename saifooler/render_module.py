@@ -68,15 +68,17 @@ class RenderModule(pl.LightningModule):
             )
         )
 
-    def render(self):
+    def render(self, camera_params=None):
+        if camera_params is not None:
+            self.change_camera(*look_at_view_transform(*camera_params))
         return self.renderer(self.mesh)[0, ..., :3]
 
     def change_camera(self, r, t):
         cameras = self.cameras
-        cameras.R, cameras.T = r, t
+        cameras.R, cameras.T = r.to(self.device), t.to(self.device)
 
-    def show_render(self):
-        image = self.render().cpu().detach().numpy()
+    def show_render(self, camera_params=None):
+        image = self.render(camera_params).cpu().detach().numpy()
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
         plt.grid("off")

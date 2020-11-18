@@ -15,7 +15,7 @@ class ColorTargetDataModule(pl.LightningDataModule):
         self.target_color = target_color
 
     def train_dataloader(self):
-        inps = torch.tensor([[0.]])
+        inps = torch.tensor([[0.5, 30., 0.]])
         targets = self.target_color.unsqueeze(0)
         dset = TensorDataset(inps, targets)
         return DataLoader(dset, batch_size=1)
@@ -28,6 +28,5 @@ if __name__ == '__main__':
     trainer = pl.Trainer(max_epochs=1, gpus=1)
     trainer.fit(tex_module, dm.train_dataloader(), None)
 
-    R, T = look_at_view_transform(0.5, 90., 0.)
-    tex_module.change_camera(R, T)
-    tex_module.show_render()
+    tex_module.show_render((0.5, 90., 0.))
+    tex_module.show_texture()

@@ -1,6 +1,7 @@
 from typing import Any
 
 import torch
+from pytorch3d.renderer import look_at_view_transform
 from torch.optim import Adam
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 
@@ -24,7 +25,10 @@ class TextureModule(RenderModule):
         new_textures.set_maps(maps)
         return new_textures
 
-    def render(self):
+    def render(self, camera_params=None):
+        if camera_params is not None:
+            self.change_camera(*look_at_view_transform(*camera_params))
+
         new_mesh = self.mesh.clone()
         new_mesh.textures = self.apply_filter()
         return self.renderer(new_mesh)[0, ..., :3]
@@ -33,22 +37,14 @@ class TextureModule(RenderModule):
         return self.render()
 
     def training_step(self, batch, batch_idx):
-        image = self.render()
-        _, target_color = batch
+        camera_params, target_color = batch
+        image = self.render(camera_params.squeeze(0))
 
         loss = torch.mean(torch.pow(image-target_color, 2))
         return loss
 
     def configure_optimizers(self):
         return Adam([self.tex_filter], lr=0.5)
-
-    def show_render(self):
-        image = self.render().cpu().detach().numpy()
-        plt.figure(figsize=(10, 10))
-        plt.imshow(image)
-        plt.grid("off")
-        plt.axis("off")
-        plt.show()
 
     def show_texture(self):
         plt.figure(figsize=(7, 7))
