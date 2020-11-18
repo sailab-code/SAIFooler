@@ -73,6 +73,9 @@ class RenderModule(pl.LightningModule):
             self.change_camera(*look_at_view_transform(*camera_params))
         return self.renderer(self.mesh)[0, ..., :3]
 
+    def forward(self, camera_params=None):
+        return self.render(camera_params)
+
     def change_camera(self, r, t):
         cameras = self.cameras
         cameras.R, cameras.T = r.to(self.device), t.to(self.device)

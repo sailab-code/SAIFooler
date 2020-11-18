@@ -33,9 +33,6 @@ class TextureModule(RenderModule):
         new_mesh.textures = self.apply_filter()
         return self.renderer(new_mesh)[0, ..., :3]
 
-    def forward(self):
-        return self.render()
-
     def training_step(self, batch, batch_idx):
         camera_params, target_color = batch
         image = self.render(camera_params.squeeze(0))
