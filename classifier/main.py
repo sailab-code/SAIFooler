@@ -36,16 +36,17 @@ if __name__ == '__main__':
 
     inception.eval()
 
-    # Get a batch of training data
-    # inputs, classes = next(iter(data_loader))
+
     class_names = data_loader.dataset.classes
 
     # Make a grid from batch
     inputs, classes = next(iter(data_loader))
+    print(f"Ground truth classes: {[class_names[x] for x in classes]}")
     out = torchvision.utils.make_grid(inputs)
 
     imshow(out, title=[class_names[x] for x in classes])
 
     pred = inception(inputs.to(device))
 
-    visualize_model(inception, data_loader, device, idx2label,  num_images=4)
+
+    visualize_model(inception, inputs, classes, device, idx2label,  num_images=4)

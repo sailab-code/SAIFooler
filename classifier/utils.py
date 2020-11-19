@@ -19,17 +19,25 @@ input_transforms = transforms.Compose([transforms.Resize(256),
                                         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
                                         ])
 
-def imshow(inp, title=None):
+def imshow(inp, title=None, ax=None):
     """Imshow for Tensor."""
+    inp = imshow_transform(inp)
+    if ax:
+        ax.imshow(inp)
+    else:
+        plt.imshow(inp)
+    if title is not None:
+        plt.title(title)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+def imshow_transform(inp):
     inp = inp.numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     inp = std * inp + mean
     inp = np.clip(inp, 0, 1)
-    plt.imshow(inp)
-    if title is not None:
-        plt.title(title)
-    plt.pause(0.001)  # pause a bit so that plots are updated
+    return inp
 
 idx2label = []
 cls2label = {}
@@ -39,31 +47,38 @@ with open("dataset/imagenet_class_index.json", "r") as read_file:
     cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
 
 
-def visualize_model(model, dataloader, device, class_names,  num_images=4):
+def visualize_model(model, inputs, labels, device, class_names,  num_images=4):
+
     was_training = model.training
     model.eval()
     images_so_far = 0
+
     fig = plt.figure()
+    axes = []
 
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloader):
-            inputs = inputs.to(device)
-            labels = labels.to(device)
 
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
+        inputs = inputs.to(device)
+        labels = labels.to(device)
 
-            for j in range(inputs.size()[0]):
-                images_so_far += 1
-                ax = plt.subplot(num_images//2, 2, images_so_far)
-                ax.axis('off')
-                ax.set_title(f'predicted: {class_names[preds[j]]}')
-                imshow(inputs.cpu().data[j])
+        outputs = model(inputs)
+        _, preds = torch.max(outputs, 1)
+        top_3_val, top3_idx = torch.topk(outputs, 3, dim=1)
 
-                if images_so_far == num_images:
-                    model.train(mode=was_training)
-                    return
+        for j in range(inputs.size()[0]):
+            images_so_far += 1
+            axes.append(fig.add_subplot(num_images//2, 2, images_so_far))
+            axes[-1].axis('off')
+            axes[-1].set_title(f'predicted: {class_names[preds[j]]}')
+
+            for k in range(3):
+                plt.text(0, -0.1 - k * 0.15, f'{class_names[top3_idx[j][k].data.cpu()]} : {top_3_val[j][k].cpu().data:.3f}', fontsize=8, transform=axes[-1].transAxes)
+
+            plt.imshow(imshow_transform(inputs.cpu().data[j]))
+
+            if images_so_far == num_images:
+                model.train(mode=was_training)
         model.train(mode=was_training)
-
-
+        fig.tight_layout()
+        plt.show()
 
