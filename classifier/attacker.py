@@ -12,20 +12,23 @@ import time
 import os
 import copy
 
-from utils import input_transforms, imshow, visualize_model, idx2label
+from utils import input_transforms, imshow, visualize_model, idx2label, fgsm_attack, build_attack, cls2label, \
+    label2idx
 
 # import dataset as dataloader
 
 use_cuda = True
 dev = 0
 assert type(dev) == int
-batch  = 1
+
+epsilons = [0, .05, .1, .15, .2, .25, .3]
 
 if __name__ == '__main__':
     folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
+    # folder_dataloader = torchvision.datasets.ImageNet(root='dataset/', transform=input_transforms, split="val")
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,
-                                              batch_size=batch,
+                                              batch_size=1,
                                               shuffle=True,
                                               num_workers=1)
 
@@ -36,17 +39,16 @@ if __name__ == '__main__':
 
     inception.eval()
 
-
     class_names = data_loader.dataset.classes
 
-    # Make a grid from batch
-    inputs, classes = next(iter(data_loader))
-    print(f"Ground truth classes: {[class_names[x] for x in classes]}")
-    out = torchvision.utils.make_grid(inputs)
-
-    imshow(out, title=[class_names[x] for x in classes])
-
-    pred = inception(inputs.to(device))
+    imagenet_class_idx = {k: [class_names[k], label2idx[class_names[k]]] for k in range(len(class_names))}
 
 
-    visualize_model(inception, inputs, classes, device, idx2label,  num_images=batch)
+    accuracies = []
+    examples = []
+
+    # Run test for each epsilon
+    for eps in epsilons:
+        acc, ex = build_attack(inception, device, data_loader, eps, imagenet_class_idx )
+        accuracies.append(acc)
+        examples.append(ex)
