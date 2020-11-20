@@ -4,7 +4,7 @@
 # Import packages
 
 import sys
-
+import os
 # Import blender python
 # Note: it will give an error in Pycharm, no way around it
 
@@ -22,6 +22,8 @@ else:
     import_path = argv[0]
     export_path = argv[1]
     texture_path = argv[2]
+
+    os.makedirs(os.path.dirname(export_path), exist_ok=True)
 
     # Import from fbx (as fast as possible)
     bpy.ops.import_scene.fbx(filepath=import_path, use_anim=False, use_custom_props=False, use_custom_props_enum_as_string=False, use_image_search=False)
