@@ -80,10 +80,14 @@ class RenderModule(pl.LightningModule):
         cameras = self.cameras
         cameras.R, cameras.T = r.to(self.device), t.to(self.device)
 
-    def show_render(self, camera_params=None):
+    def show_render(self, camera_params=None, return_image=False):
         image = self.render(camera_params).cpu().detach().numpy()
-        plt.figure(figsize=(10, 10))
+        figure = plt.figure(figsize=(10, 10))
         plt.imshow(image)
         plt.grid("off")
         plt.axis("off")
-        plt.show()
+
+        if return_image:
+            return figure
+        else:
+            plt.show()

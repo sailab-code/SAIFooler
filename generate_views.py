@@ -1,0 +1,28 @@
+from saifooler.texture_module import RenderModule
+from pytorch3d.renderer import look_at_view_transform
+import matplotlib.pyplot as plt
+
+meshes = {
+    'armchair': (2., ),
+    'laptop': (1., ),
+    'remote_controller': (1., ),
+    'table_living_room': (2.5, ),
+    'toilet': (1.5, )
+}
+
+# distance, elevation, azimuth
+
+
+def get_mesh_path(mesh_name):
+    return f"./meshes/{mesh_name}/{mesh_name}.obj"
+
+
+if __name__ == '__main__':
+    for mesh_name, params in meshes.items():
+        rm = RenderModule(get_mesh_path(mesh_name))
+        rm.to('cuda:0')
+        distance = params[0]
+
+        for azim in range(0, 360, 60):
+            figure = rm.show_render((distance, 45., float(azim)), return_image=True)
+            plt.savefig(f"./images/pytorch3d/{mesh_name}_{azim}.png")
