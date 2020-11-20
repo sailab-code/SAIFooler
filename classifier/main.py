@@ -19,13 +19,13 @@ from utils import input_transforms, imshow, visualize_model, idx2label
 use_cuda = True
 dev = 0
 assert type(dev) == int
-
+batch  = 1
 
 if __name__ == '__main__':
     folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,
-                                              batch_size=4,
+                                              batch_size=batch,
                                               shuffle=True,
                                               num_workers=1)
 
@@ -36,16 +36,17 @@ if __name__ == '__main__':
 
     inception.eval()
 
-    # Get a batch of training data
-    # inputs, classes = next(iter(data_loader))
+
     class_names = data_loader.dataset.classes
 
     # Make a grid from batch
     inputs, classes = next(iter(data_loader))
+    print(f"Ground truth classes: {[class_names[x] for x in classes]}")
     out = torchvision.utils.make_grid(inputs)
 
     imshow(out, title=[class_names[x] for x in classes])
 
     pred = inception(inputs.to(device))
 
-    visualize_model(inception, data_loader, device, idx2label,  num_images=4)
+
+    visualize_model(inception, inputs, classes, device, idx2label,  num_images=batch)
