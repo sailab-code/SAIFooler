@@ -73,6 +73,7 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4):
 
     fig = plt.figure()
     axes = []
+    prediction_classes = []
 
     with torch.no_grad():
 
@@ -91,7 +92,7 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4):
                 axes.append(fig.add_subplot(num_images, 1, images_so_far))
             axes[-1].axis('off')
             axes[-1].set_title(f'predicted: {class_names[preds[j]]}')
-
+            prediction_classes.append(class_names[preds[j]])
             for k in range(3):
                 plt.text(0, -0.1 - k * 0.15,
                          f'{class_names[top3_idx[j][k].data.cpu()]} : {top_3_val[j][k].cpu().data:.3f}', fontsize=8,
@@ -104,6 +105,7 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4):
         model.train(mode=was_training)
         fig.tight_layout()
         plt.show()
+        return prediction_classes
 
 
 def fgsm_attack(image, epsilon, data_grad):

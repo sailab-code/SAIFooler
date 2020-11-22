@@ -35,8 +35,6 @@ if __name__ == '__main__':
         return filter_classes, {c: i for i, c in enumerate(filter_classes)}
 
 
-    # folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
-
     torchvision.datasets.ImageFolder._find_classes = ___find_classes
     folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv/', transform=input_transforms,
                                                          is_valid_file=checkfun, )
