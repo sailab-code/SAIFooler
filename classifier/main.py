@@ -24,22 +24,10 @@ batch = 6
 
 if __name__ == '__main__':
 
-    filter_classes = ["laptop"]
 
-    def checkfun(args):
-        az = Path(args)
-        return az.parent.stem in filter_classes
+    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
 
 
-    def ___find_classes(self, dir):
-        return filter_classes, {c: i for i, c in enumerate(filter_classes)}
-
-
-    # folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
-
-    torchvision.datasets.ImageFolder._find_classes = ___find_classes
-    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv/', transform=input_transforms,
-                                                         is_valid_file=checkfun, )
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,
                                               batch_size=batch,
