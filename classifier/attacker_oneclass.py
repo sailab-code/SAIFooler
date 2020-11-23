@@ -14,6 +14,7 @@ import copy
 
 from utils import input_transforms, imshow, visualize_model, idx2label, fgsm_attack, build_attack, cls2label, \
     label2idx, imshow_transform_notensor
+from pathlib import Path
 
 # import dataset as dataloader
 
@@ -24,8 +25,19 @@ assert type(dev) == int
 epsilons = [0, .05, .1, .15, .2, .25, .3]
 
 if __name__ == '__main__':
-    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
-    # folder_dataloader = torchvision.datasets.ImageNet(root='dataset/', transform=input_transforms, split="val")
+
+    filter_classes = ["laptop"]
+
+    def checkfun(args):
+        az = Path(args)
+        return az.parent.stem in filter_classes
+    def ___find_classes(self, dir):
+        return filter_classes, {c: i for i, c in enumerate(filter_classes)}
+
+
+    torchvision.datasets.ImageFolder._find_classes = ___find_classes
+    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv/', transform=input_transforms,
+                                                         is_valid_file=checkfun, )
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,
                                               batch_size=1,
@@ -46,19 +58,14 @@ if __name__ == '__main__':
     class_names = data_loader.dataset.classes
 
     imagenet_class_idx = {k: [class_names[k], label2idx[class_names[k]]] for k in range(len(class_names))}
-    # correspondance imagefolder classes -> imagenet classes
-    # {0: ['Persian_cat', 283], 1: ['goldfish', 1], 2: ['home_theater', 598], 3: ['hummingbird', 94],
-    # 4: ['laptop', 620],  # 5: ['racket', 752], 6: ['remote_control', 761], 7: ['toilet_seat', 861]}
 
-    imaget_label_tensor = [v[1] for k, v in imagenet_class_idx.items()]
 
-    imaget_label_tensor = torch.tensor(imaget_label_tensor)
     accuracies = []
     examples = []
 
     # Run test for each epsilon
     for eps in epsilons:
-        acc, ex = build_attack(used_model, device, data_loader, eps, imaget_label_tensor)
+        acc, ex = build_attack(used_model, device, data_loader, eps, imagenet_class_idx )
         accuracies.append(acc)
         examples.append(ex)
 

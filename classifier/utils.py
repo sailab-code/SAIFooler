@@ -66,7 +66,7 @@ with open("dataset/imagenet_class_index.json", "r") as read_file:
     label2idx = {class_idx[str(k)][1]: k  for k in range(len(class_idx))}
 
 
-def visualize_model(model, inputs, labels, device, class_names, num_images=4):
+def visualize_model(model, inputs, labels, device, class_names, num_images=4, filter_classes=None):
     was_training = model.training
     model.eval()
     images_so_far = 0
@@ -104,6 +104,9 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4):
                 model.train(mode=was_training)
         model.train(mode=was_training)
         fig.tight_layout()
+        if filter_classes:
+            fig.suptitle(f"Class: {filter_classes} - Model: {model.__class__.__name__}", y=1.1)
+            plt.savefig(f"{filter_classes[0]}_{model.__class__.__name__}.jpg", dpi=600, bbox_inches='tight')
         plt.show()
         return prediction_classes
 
@@ -119,40 +122,42 @@ def fgsm_attack(image, epsilon, data_grad):
     return perturbed_image
 
 
-def build_attack(model, device, test_loader, epsilon, imagenet_class_idx, idx2label=None):
+def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx2label=None, DEBUG=False):
     # Accuracy counter
     correct = 0
     adv_examples = []
 
-    # Loop over all examples in test set
+    # Loop over all examples in set - use dataloader
     for data, target in test_loader:
 
-        # Send the data and label to the device
+        # Send the data and label (the one from dataloader) to the device
         data, target_image_loader = data.to(device), target.to(device)
 
-        target = imagenet_class_idx[target_image_loader.item()][1]
+        # extract the corresponding label from imagenet
+        target = imagenet_class_tensor[target_image_loader].to(device)
 
-        # Set requires_grad attribute of tensor. Important for Attac
+        # Set requires_grad attribute of image tensor
         data.requires_grad = True
 
         # Forward pass the data through the model
         output = model(data)
 
-        # out = torchvision.utils.make_grid(data.cpu().detach())
-        # class_names = test_loader.dataset.classes
-        # imshow(out, title=[class_names[x] for x in target])
+        if DEBUG:
+            out = torchvision.utils.make_grid(data.cpu().detach())
+            class_names = test_loader.dataset.classes
+            imshow(out, title=[class_names[x] for x in [target.item()]]) # TODO togli list
 
-        init_pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
+        value_pred, init_pred = output.max(1, keepdim=True)  # get the index of the max log-probability class (Top 1)
 
         # visualize_model(model,  data, target, device, idx2label, num_images=1)
 
         # If the initial prediction is wrong, dont bother attacking, just move on
         #if init_pred.item() != target.item():
-        if init_pred.item() != target:
+        if init_pred.item() != target: # TODO check cosa sta facendo
             continue
 
         # Calculate the loss
-        loss = F.nll_loss(output, target_image_loader)
+        loss = F.nll_loss(output, target)
 
         # Zero all existing gradients
         model.zero_grad()
@@ -171,7 +176,7 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_idx, idx2la
 
         # Check for success
         final_pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
-        #if final_pred.item() == target.item():
+        # if final_pred.item() == target.item():
         if final_pred.item() == target:
             correct += 1
             # Special case for saving 0 epsilon examples

@@ -12,6 +12,7 @@ import time
 import os
 import copy
 from pathlib import Path
+import sys
 
 from utils import input_transforms, imshow, visualize_model, idx2label
 
@@ -24,7 +25,10 @@ batch = 6
 
 if __name__ == '__main__':
 
-    filter_classes = ["laptop"]
+    filter_classes = ["toilet_seat"]
+    # used_model_id = "inception"
+    used_model_id = "mobilenet"
+
 
     def checkfun(args):
         az = Path(args)
@@ -47,11 +51,12 @@ if __name__ == '__main__':
     print("CUDA Available: ", torch.cuda.is_available())
     device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
-    # inception = models.inception_v3(pretrained=True).to(device)
-
-    mobilenet = models.mobilenet_v2(pretrained=True).to(device)
-
-    used_model = mobilenet
+    if used_model_id == "inception":
+        used_model = models.inception_v3(pretrained=True).to(device)
+    elif used_model_id =="mobilenet":
+        used_model = models.mobilenet_v2(pretrained=True).to(device)
+    else:
+        sys.exit("Wrong model!")
 
     used_model.eval()
 
@@ -66,5 +71,5 @@ if __name__ == '__main__':
 
     pred = used_model(inputs.to(device))
 
-    pred_class = visualize_model(used_model, inputs, classes, device, idx2label, num_images=batch)
+    pred_class = visualize_model(used_model, inputs, classes, device, idx2label, num_images=batch, filter_classes=filter_classes)
     print(f"Predicted classes: \t \t {pred_class}")
