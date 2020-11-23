@@ -23,14 +23,17 @@ else:
     export_path = argv[1]
     # Note: it does support multiple texture paths
     texture_paths = argv[2:]
+    print(texture_paths)
     os.makedirs(os.path.dirname(export_path), exist_ok=True)
-
     # Import from fbx (as fast as possible)
     bpy.ops.import_scene.fbx(filepath=import_path, use_anim=False, use_custom_props=False, use_custom_props_enum_as_string=False, use_image_search=False)
     # Get the objects now in the scene
     imported_objs = bpy.context.selected_objects
+    imported_objs.reverse()
+    print(imported_objs)
     # Parse all imported objects
     for i, imported_obj in enumerate(imported_objs):
+        print(imported_obj)
         # Get the object material (or create new if not defined)
         imported_obj_mat = imported_obj.active_material
         if imported_obj_mat is None:
@@ -45,7 +48,7 @@ else:
         imported_obj_mat_shader = nodes.get("Principled BSDF")
         # Create Image Texture node and load the albedo texture
         # Note: this will be skipped if there is no texture defined as argument for the current object
-        if i >= len(texture_paths):
+        if i < len(texture_paths):
             imported_obj_mat_tex = nodes.new("ShaderNodeTexImage")
             imported_obj_mat_tex.image = bpy.data.images.load(texture_paths[i])
             imported_obj_mat_tex.image.colorspace_settings.name = "sRGB"
