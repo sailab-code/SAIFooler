@@ -60,5 +60,5 @@ else:
         else:
             imported_obj.data.materials.append(imported_obj_mat)
     # Export to obj
-    bpy.ops.export_scene.obj(filepath=export_path, axis_forward='-Z', axis_up='Y')
+    bpy.ops.export_scene.obj(filepath=export_path, axis_forward='-Z', axis_up='Y', path_mode='COPY')
 
