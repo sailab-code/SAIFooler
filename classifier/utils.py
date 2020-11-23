@@ -46,6 +46,7 @@ def imshow_transform(inp):
     inp = np.clip(inp, 0, 1)
     return inp
 
+
 def imshow_transform_notensor(inp):
     inp = inp.transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
@@ -63,7 +64,7 @@ with open("dataset/imagenet_class_index.json", "r") as read_file:
     idx2label = [class_idx[str(k)][1] for k in range(len(class_idx))]
     cls2label = {class_idx[str(k)][0]: class_idx[str(k)][1] for k in range(len(class_idx))}
     cls_id2label = {k: class_idx[str(k)][1] for k in range(len(class_idx))}
-    label2idx = {class_idx[str(k)][1]: k  for k in range(len(class_idx))}
+    label2idx = {class_idx[str(k)][1]: k for k in range(len(class_idx))}
 
 
 def visualize_model(model, inputs, labels, device, class_names, num_images=4, filter_classes=None):
@@ -122,7 +123,8 @@ def fgsm_attack(image, epsilon, data_grad):
     return perturbed_image
 
 
-def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx2label=None, DEBUG=False):
+def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx2label=None, DEBUG=False,
+                 num_attacks=1):
     # Accuracy counter
     correct = 0
     adv_examples = []
@@ -145,15 +147,15 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
         if DEBUG:
             out = torchvision.utils.make_grid(data.cpu().detach())
             class_names = test_loader.dataset.classes
-            imshow(out, title=[class_names[x] for x in [target.item()]]) # TODO togli list
+            imshow(out, title=[class_names[x] for x in [target.item()]])  # TODO togli list
 
         value_pred, init_pred = output.max(1, keepdim=True)  # get the index of the max log-probability class (Top 1)
 
         # visualize_model(model,  data, target, device, idx2label, num_images=1)
 
         # If the initial prediction is wrong, dont bother attacking, just move on
-        #if init_pred.item() != target.item():
-        if init_pred.item() != target: # TODO check cosa sta facendo
+        # if init_pred.item() != target.item():
+        if init_pred.item() != target.item():  # TODO check cosa sta facendo
             continue
 
         # Calculate the loss
@@ -169,7 +171,9 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
         data_grad = data.grad.data
 
         # Call FGSM Attack
-        perturbed_data = fgsm_attack(data, epsilon, data_grad)
+        perturbed_data = data
+        for i in range(num_attacks):
+            perturbed_data = fgsm_attack(perturbed_data, epsilon, data_grad)
 
         # Re-classify the perturbed image
         output = model(perturbed_data)

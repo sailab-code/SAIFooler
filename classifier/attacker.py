@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-
+import sys
 from utils import input_transforms, imshow, visualize_model, idx2label, fgsm_attack, build_attack, cls2label, \
     label2idx, imshow_transform_notensor
 
@@ -24,6 +24,10 @@ assert type(dev) == int
 epsilons = [0, .05, .1, .15, .2, .25, .3]
 
 if __name__ == '__main__':
+
+    used_model_id = "inception"
+    # used_model_id = "mobilenet"
+
     folder_dataloader = torchvision.datasets.ImageFolder(root='dataset/', transform=input_transforms)
     # folder_dataloader = torchvision.datasets.ImageNet(root='dataset/', transform=input_transforms, split="val")
 
@@ -35,11 +39,12 @@ if __name__ == '__main__':
     print("CUDA Available: ", torch.cuda.is_available())
     device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
-    inception = models.inception_v3(pretrained=True).to(device)
-
-    # mobilenet = models.mobilenet_v2(pretrained=True).to(device)
-
-    used_model = inception
+    if used_model_id == "inception":
+        used_model = models.inception_v3(pretrained=True).to(device)
+    elif used_model_id == "mobilenet":
+        used_model = models.mobilenet_v2(pretrained=True).to(device)
+    else:
+        sys.exit("Wrong model!")
 
     used_model.eval()
 
@@ -58,7 +63,7 @@ if __name__ == '__main__':
 
     # Run test for each epsilon
     for eps in epsilons:
-        acc, ex = build_attack(used_model, device, data_loader, eps, imaget_label_tensor)
+        acc, ex = build_attack(used_model, device, data_loader, eps, imaget_label_tensor, idx2label=idx2label)
         accuracies.append(acc)
         examples.append(ex)
 

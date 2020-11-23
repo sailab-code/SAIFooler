@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-
+import sys
 from utils import input_transforms, imshow, visualize_model, idx2label, fgsm_attack, build_attack, cls2label, \
     label2idx, imshow_transform_notensor
 from pathlib import Path
@@ -26,7 +26,9 @@ epsilons = [0, .05, .1, .15, .2, .25, .3]
 
 if __name__ == '__main__':
 
-    filter_classes = ["laptop"]
+    filter_classes = ["toilet_seat"]
+
+    used_model_id = "mobilenet"
 
     def checkfun(args):
         az = Path(args)
@@ -47,25 +49,31 @@ if __name__ == '__main__':
     print("CUDA Available: ", torch.cuda.is_available())
     device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
-    inception = models.inception_v3(pretrained=True).to(device)
-
-    # mobilenet = models.mobilenet_v2(pretrained=True).to(device)
-
-    used_model = inception
+    if used_model_id == "inception":
+        used_model = models.inception_v3(pretrained=True).to(device)
+    elif used_model_id == "mobilenet":
+        used_model = models.mobilenet_v2(pretrained=True).to(device)
+    else:
+        sys.exit("Wrong model!")
 
     used_model.eval()
 
     class_names = data_loader.dataset.classes
 
     imagenet_class_idx = {k: [class_names[k], label2idx[class_names[k]]] for k in range(len(class_names))}
+    # correspondance imagefolder classes -> imagenet classes
+    # {0: ['Persian_cat', 283], 1: ['goldfish', 1], 2: ['home_theater', 598], 3: ['hummingbird', 94],
+    # 4: ['laptop', 620],  # 5: ['racket', 752], 6: ['remote_control', 761], 7: ['toilet_seat', 861]}
 
+    imaget_label_tensor = [v[1] for k, v in imagenet_class_idx.items()]
 
+    imaget_label_tensor = torch.tensor(imaget_label_tensor)
     accuracies = []
     examples = []
 
     # Run test for each epsilon
     for eps in epsilons:
-        acc, ex = build_attack(used_model, device, data_loader, eps, imagenet_class_idx )
+        acc, ex = build_attack(used_model, device, data_loader, eps, imaget_label_tensor)
         accuracies.append(acc)
         examples.append(ex)
 
