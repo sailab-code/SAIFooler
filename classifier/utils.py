@@ -118,7 +118,8 @@ def fgsm_attack(image, epsilon, data_grad):
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image + epsilon * sign_data_grad
     # Adding clipping to maintain [0,1] range
-    perturbed_image = torch.clamp(perturbed_image, 0, 1)
+    #perturbed_image = torch.clamp(perturbed_image, 0, 1)
+    perturbed_image = torch.clamp(perturbed_image, torch.min(image).item(), torch.max(image).item()) # TODO check if correct
     # Return the perturbed image
     return perturbed_image
 
@@ -172,8 +173,16 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
 
         # Call FGSM Attack
         perturbed_data = data
+
+        # imshow(data.squeeze().detach().cpu())
+
         for i in range(num_attacks):
             perturbed_data = fgsm_attack(perturbed_data, epsilon, data_grad)
+
+        # print(epsilon)
+        # imshow(perturbed_data.squeeze().detach().cpu())
+        #
+        # exit()
 
         # Re-classify the perturbed image
         output = model(perturbed_data)
@@ -187,13 +196,15 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
             if (epsilon == 0) and (len(adv_examples) < 5):
                 adv_ex = perturbed_data.squeeze().detach().cpu().numpy()
                 adv_examples.append((init_pred.item(), final_pred.item(), adv_ex))
+
         else:
             # Save some adv examples for visualization later
             if len(adv_examples) < 5:
-                adv_ex = perturbed_data.squeeze().detach().cpu().numpy()
-                adv_examples.append((init_pred.item(), final_pred.item(), adv_ex))
+                adv_ex = perturbed_data.squeeze().detach().cpu()
+                adv_examples.append((init_pred.item(), final_pred.item(), adv_ex.numpy()))
+                # imshow(adv_ex)
 
-    # Calculate final accuracy for this epsilon
+                # Calculate final accuracy for this epsilon
     final_acc = correct / float(len(test_loader))
     print(f"Epsilon: {epsilon}\tTest Accuracy = {correct} / {len(test_loader)} = {final_acc}")
 

@@ -86,9 +86,9 @@ if __name__ == '__main__':
             plt.xticks([], [])
             plt.yticks([], [])
             if j == 0:
-                plt.ylabel("Eps: {}".format(epsilons[i]), fontsize=14)
+                plt.ylabel(f"Eps: {epsilons[i]}", fontsize=14)
             orig, adv, ex = examples[i][j]
-            plt.title("{} -> {}".format(orig, adv))
+            plt.title(f"{orig} -> {adv}")
 
             plt.imshow(imshow_transform_notensor(ex))
     plt.tight_layout()
