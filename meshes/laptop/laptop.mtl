@@ -10,6 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+map_Kd laptop_01_AlbedoTransparency.png
 
 newmtl laptop_01_keyboard
 Ns 900.000000
@@ -30,4 +31,3 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd C:\\Users\\enric\\wkspaces\\sailenv_4.2f1\\Assets\\Data\\Objects\\Textures\\laptop_01_AlbedoTransparency.png

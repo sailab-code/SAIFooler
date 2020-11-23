@@ -10,6 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+map_Kd remote_controller_01_AlbedoTransparency.png
 
 newmtl remote_controller_01_buttons
 Ns 323.999994
@@ -20,4 +21,3 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd C:\\Users\\enric\\wkspaces\\sailenv_4.2f1\\Assets\\Data\\Objects\\Textures\\remote_controller_01_AlbedoTransparency.png
