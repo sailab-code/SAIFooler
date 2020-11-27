@@ -3,11 +3,12 @@ from pytorch3d.renderer import look_at_view_transform
 import matplotlib.pyplot as plt
 
 meshes = {
-    'armchair': (2., ),
-    'laptop': (1., ),
-    'remote_controller': (1., ),
-    'table_living_room': (2.5, ),
-    'toilet': (1.5, )
+    # 'armchair': (2., ),
+    # 'laptop': (1., ),
+    # 'remote_controller': (1., ),
+    # 'table_living_room': (2.5, ),
+    # 'toilet': (1.5, ),
+    'spaceship': (1., )
 }
 
 # distance, elevation, azimuth
@@ -27,4 +28,4 @@ if __name__ == '__main__':
             rm.center_on_mesh(azim=azim, elev=20.)
             figure = rm.show_render(return_image=True)
             figure.savefig(f"./images/pytorch3d/{mesh_name}_{azim}.png")
-            figure.close()
+            plt.close(figure)
