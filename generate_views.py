@@ -24,5 +24,7 @@ if __name__ == '__main__':
         distance = params[0]
 
         for azim in range(0, 360, 60):
-            figure = rm.show_render((distance, 45., float(azim)), return_image=True)
-            plt.savefig(f"./images/pytorch3d/{mesh_name}_{azim}.png")
+            rm.center_on_mesh(azim=azim, elev=20.)
+            figure = rm.show_render(return_image=True)
+            figure.savefig(f"./images/pytorch3d/{mesh_name}_{azim}.png")
+            figure.close()

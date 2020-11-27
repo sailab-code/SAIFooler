@@ -16,7 +16,10 @@ from pytorch3d.renderer import (
 )
 
 # extend TexturesUV
-def set_maps(self, maps):
+from pytorch3d.structures import Meshes
+
+
+def set_maps(self: TexturesUV, maps):
     from pytorch3d.renderer.mesh.textures import _pad_texture_maps
     if torch.is_tensor(maps):
         if maps.ndim != 4 or maps.shape[0] != self._N:
@@ -38,4 +41,14 @@ def set_maps(self, maps):
     else:
         raise ValueError("Expected maps to be a tensor or list.")
 
+
 TexturesUV.set_maps = set_maps
+
+
+def get_mesh_sizes(self: Meshes):
+    bboxes = self.get_bounding_boxes()
+    sizes = bboxes[:, :, 1] - bboxes[:, :, 0]
+    return sizes
+
+
+Meshes.get_sizes = get_mesh_sizes

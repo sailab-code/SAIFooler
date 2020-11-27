@@ -1,6 +1,7 @@
 from typing import Optional
 
 import torch
+from pytorch3d.structures import Meshes
 from torch.optim import Adam
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 
@@ -9,7 +10,7 @@ import pytorch_lightning as pl
 import pytorch3d
 import pytorch3d.io as py3dio
 from pytorch3d.renderer import TexturesUV, MeshRenderer, MeshRasterizer, look_at_view_transform, FoVPerspectiveCameras, \
-    RasterizationSettings, SoftPhongShader, PointLights
+    RasterizationSettings, SoftPhongShader, PointLights, DirectionalLights
 import matplotlib.pyplot as plt
 
 class RenderModule(pl.LightningModule):
@@ -20,16 +21,16 @@ class RenderModule(pl.LightningModule):
         super().__init__(*args, **kwargs)
 
         if renderer is not None:
-            self.renderer = renderer
+            self.renderer: MeshRenderer = renderer
         else:
-            self.renderer = self.__make_default_renderer()
+            self.renderer: MeshRenderer = self.__make_default_renderer()
 
-        self.rasterizer = self.renderer.rasterizer
-        self.shader = self.renderer.shader
-        self.cameras = self.rasterizer.cameras
-        self.lights = self.shader.lights
+        self.rasterizer: MeshRasterizer = self.renderer.rasterizer
+        self.shader: SoftPhongShader = self.renderer.shader
+        self.cameras: FoVPerspectiveCameras = self.rasterizer.cameras
+        self.lights: PointLights = self.shader.lights
 
-        self.mesh = py3dio.load_objs_as_meshes([mesh_path], device=self.device)
+        self.mesh: Meshes = py3dio.load_objs_as_meshes([mesh_path], device=self.device)
 
     def cuda(self, deviceId=None):
         super().cuda(deviceId)
@@ -79,6 +80,14 @@ class RenderModule(pl.LightningModule):
     def change_camera(self, r, t):
         cameras = self.cameras
         cameras.R, cameras.T = r.to(self.device), t.to(self.device)
+
+    def center_on_mesh(self, elev=0., azim=0.):
+        sizes = self.mesh.get_sizes()
+        angle = torch.deg2rad(self.cameras.fov / 2.)
+        distances = 1.35*sizes / (2 * torch.tan(angle))
+        max_d = torch.max(distances)
+        self.change_camera(*look_at_view_transform(max_d, elev, azim))
+
 
     def show_render(self, camera_params=None, return_image=False):
         image = self.render(camera_params).cpu().detach().numpy()
