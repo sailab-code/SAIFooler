@@ -68,7 +68,7 @@ with open("dataset/imagenet_class_index.json", "r") as read_file:
     label2idx = {class_idx[str(k)][1]: k for k in range(len(class_idx))}
 
 
-def visualize_model(model, inputs, labels, device, class_names, num_images=4, filter_classes=None):
+def visualize_model(model, inputs, labels, device, class_names, num_images=4, filter_classes=None, imagenet_label_tensor=None):
     was_training = model.training
     model.eval()
     images_so_far = 0
@@ -85,6 +85,12 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4, fi
         outputs = model(inputs)
         _, preds = torch.max(outputs, 1)
         top_3_val, top3_idx = torch.topk(outputs, 3, dim=1)
+        if imagenet_label_tensor:
+            target_image_loader = labels
+            # extract the corresponding label from imagenet
+            target = imagenet_label_tensor[target_image_loader].to(device)
+            indices = target.unsqueeze(-1)
+            value_real_class = torch.gather(outputs, 1, indices)
 
         for j in range(inputs.size()[0]):
             images_so_far += 1
@@ -93,13 +99,12 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4, fi
             else:
                 axes.append(fig.add_subplot(num_images, 1, images_so_far))
             axes[-1].axis('off')
-            axes[-1].set_title(f'predicted: {class_names[preds[j]]}')
+            axes[-1].set_title(f'P: {class_names[preds[j]]} (T:{value_real_class[j][0].cpu().data:.3f})')
             prediction_classes.append(class_names[preds[j]])
             for k in range(3):
                 plt.text(0, -0.1 - k * 0.15,
                          f'{class_names[top3_idx[j][k].data.cpu()]} : {top_3_val[j][k].cpu().data:.3f}', fontsize=8,
                          transform=axes[-1].transAxes)
-
             plt.imshow(imshow_transform(inputs.cpu().data[j]))
 
             if images_so_far == num_images:
