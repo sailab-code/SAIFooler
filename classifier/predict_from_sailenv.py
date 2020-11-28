@@ -26,8 +26,8 @@ batch = 6
 if __name__ == '__main__':
 
     filter_classes = ["toilet_seat"]
-    # used_model_id = "inception"
-    used_model_id = "mobilenet"
+    used_model_id = "inception"
+    # used_model_id = "mobilenet"
 
 
     def checkfun(args):
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
 
     torchvision.datasets.ImageFolder._find_classes = ___find_classes
-    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv/', transform=input_transforms,
+    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv_close/', transform=input_transforms,
                                                          is_valid_file=checkfun, )
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,

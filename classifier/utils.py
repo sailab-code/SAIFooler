@@ -19,6 +19,7 @@ import torch.nn.functional as F
 
 
 input_transforms = transforms.Compose([
+    transforms.CenterCrop(750),
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
@@ -107,7 +108,7 @@ def visualize_model(model, inputs, labels, device, class_names, num_images=4, fi
         fig.tight_layout()
         if filter_classes:
             fig.suptitle(f"Class: {filter_classes} - Model: {model.__class__.__name__}", y=1.1)
-            plt.savefig(f"{filter_classes[0]}_{model.__class__.__name__}.jpg", dpi=600, bbox_inches='tight')
+            plt.savefig(f"{filter_classes[0]}_{model.__class__.__name__}.pdf", dpi=600, bbox_inches='tight')
         plt.show()
         return prediction_classes
 
@@ -118,14 +119,61 @@ def fgsm_attack(image, epsilon, data_grad):
     # Create the perturbed image by adjusting each pixel of the input image
     perturbed_image = image + epsilon * sign_data_grad
     # Adding clipping to maintain [0,1] range
-    #perturbed_image = torch.clamp(perturbed_image, 0, 1)
-    perturbed_image = torch.clamp(perturbed_image, torch.min(image).item(), torch.max(image).item()) # TODO check if correct
+    # perturbed_image = torch.clamp(perturbed_image, 0, 1)
+    perturbed_image = torch.clamp(perturbed_image, torch.min(image).item(),
+                                  torch.max(image).item())  # TODO check if correct
     # Return the perturbed image
     return perturbed_image
 
 
+def pgd(model, image, y, epsilon, alpha, num_iter):
+    """ Construct FGSM adversarial eimageamples on the eimageamples image"""
+    delta = torch.zeros_like(image, requires_grad=True)
+    for t in range(num_iter):
+        loss = nn.CrossEntropyLoss()(model(image + delta), y)
+        loss.backward()
+        delta.data = (delta + image.shape[0] * alpha * delta.grad.data).clamp(-epsilon, epsilon)
+        delta.grad.zero_()
+    return delta.detach()
+
+
+# def epoch_adversarial_pgd(model, device, loader, attack, imagenet_class_tensor):
+def epoch_adversarial_pgd(model, device, loader, imagenet_class_tensor, *args):
+    total_loss, total_err = 0., 0.
+    correct = 0
+    adv_examples = []
+    for data, target in loader:
+        data, target_image_loader = data.to(device), target.to(device)
+        # extract the corresponding label from imagenet
+        target = imagenet_class_tensor[target_image_loader].to(device)
+
+        # Set requires_grad attribute of image tensor
+        data.requires_grad = True
+
+        delta = pgd(model, data, target, *args)
+
+        pred_before = model(data).max(dim=1)[1]
+
+        targetp = model(data + delta)
+        loss = nn.CrossEntropyLoss()(targetp, target)
+        predicted = targetp.max(dim=1)[1]
+        total_err += (predicted != target).sum().item()
+        total_loss += loss.item() * data.shape[0]
+
+        # plot_images_pgd(data + delta, target, targetp, 3, 6)
+        if predicted != target:
+            # Save some adv examples for visualization later
+            if len(adv_examples) < 5:
+                perturbed_data = data + delta
+                adv_ex = perturbed_data.squeeze().detach().cpu()
+                adv_examples.append((pred_before.item(), predicted.item(), adv_ex.numpy()))
+
+    return total_err / len(loader.dataset), total_loss / len(loader.dataset), adv_examples
+
+
+
 def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx2label=None, DEBUG=False,
-                 num_attacks=1):
+                 ):
     # Accuracy counter
     correct = 0
     adv_examples = []
@@ -156,7 +204,7 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
 
         # If the initial prediction is wrong, dont bother attacking, just move on
         # if init_pred.item() != target.item():
-        if init_pred.item() != target.item():  # TODO check cosa sta facendo
+        if init_pred.item() != target.item():  #
             continue
 
         # Calculate the loss
@@ -176,8 +224,7 @@ def build_attack(model, device, test_loader, epsilon, imagenet_class_tensor, idx
 
         # imshow(data.squeeze().detach().cpu())
 
-        for i in range(num_attacks):
-            perturbed_data = fgsm_attack(perturbed_data, epsilon, data_grad)
+        perturbed_data = fgsm_attack(perturbed_data, epsilon, data_grad)
 
         # print(epsilon)
         # imshow(perturbed_data.squeeze().detach().cpu())
