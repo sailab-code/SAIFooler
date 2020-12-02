@@ -14,8 +14,7 @@ import copy
 from pathlib import Path
 import sys
 
-from utils import input_transforms, imshow, visualize_model, idx2label
-
+from utils import *
 # import dataset as dataloader
 
 use_cuda = True
@@ -26,8 +25,8 @@ batch = 6
 if __name__ == '__main__':
 
     filter_classes = ["toilet_seat"]
-    # used_model_id = "inception"
-    used_model_id = "mobilenet"
+    used_model_id = "inception"
+    # used_model_id = "mobilenet"
 
 
     def checkfun(args):
@@ -40,7 +39,7 @@ if __name__ == '__main__':
 
 
     torchvision.datasets.ImageFolder._find_classes = ___find_classes
-    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv/', transform=input_transforms,
+    folder_dataloader = torchvision.datasets.ImageFolder(root='dataset_adv_close/', transform=input_transforms,
                                                          is_valid_file=checkfun, )
 
     data_loader = torch.utils.data.DataLoader(folder_dataloader,
@@ -62,6 +61,15 @@ if __name__ == '__main__':
 
     class_names = data_loader.dataset.classes
 
+    imagenet_class_idx = {k: [class_names[k], label2idx[class_names[k]]] for k in range(len(class_names))}
+    # correspondance imagefolder classes -> imagenet classes
+    # {0: ['Persian_cat', 283], 1: ['goldfish', 1], 2: ['home_theater', 598], 3: ['hummingbird', 94],
+    # 4: ['laptop', 620],  # 5: ['racket', 752], 6: ['remote_control', 761], 7: ['toilet_seat', 861]}
+
+    imagenet_label_tensor = [v[1] for k, v in imagenet_class_idx.items()]
+
+    imagenet_label_tensor = torch.tensor(imagenet_label_tensor)
+
     # Make a grid from batch
     inputs, classes = next(iter(data_loader))
     print(f"Ground truth classes: \t {[class_names[x] for x in classes]}")
@@ -71,5 +79,5 @@ if __name__ == '__main__':
 
     pred = used_model(inputs.to(device))
 
-    pred_class = visualize_model(used_model, inputs, classes, device, idx2label, num_images=batch, filter_classes=filter_classes)
+    pred_class = visualize_model(used_model, inputs, classes, device, idx2label, num_images=batch, filter_classes=filter_classes, imagenet_label_tensor=imagenet_label_tensor)
     print(f"Predicted classes: \t \t {pred_class}")
