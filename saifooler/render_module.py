@@ -30,7 +30,9 @@ class RenderModule(pl.LightningModule):
         self.cameras: FoVPerspectiveCameras = self.rasterizer.cameras
         self.lights: PointLights = self.shader.lights
 
-        self.mesh: Meshes = py3dio.load_objs_as_meshes([mesh_path], device=self.device)
+        if not isinstance(mesh_path, list):
+            mesh_path = [mesh_path]
+        self.mesh: Meshes = py3dio.load_objs_as_meshes(mesh_path, create_texture_atlas=True, device=self.device)
 
     def cuda(self, deviceId=None):
         super().cuda(deviceId)
