@@ -1,3 +1,3 @@
 [submodule "pytorch3d"]
 	path = pytorch3d
-	url = git@github.com:sailab-code/pytorch3d.git
+	url = https://github.com/sailab-code/pytorch3d.git
