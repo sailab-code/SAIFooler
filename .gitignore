@@ -3,3 +3,5 @@ cub-1.10.0/
 lightning_logs
 **/__pycache__/
 images/
+pytorch3d.bkp/
+cub-1.10.0.zip
