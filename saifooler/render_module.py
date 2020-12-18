@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 import torch
@@ -32,7 +33,15 @@ class RenderModule(pl.LightningModule):
 
         if not isinstance(mesh_path, list):
             mesh_path = [mesh_path]
-        self.mesh: Meshes = py3dio.load_objs_as_meshes(mesh_path, create_texture_atlas=True, device=self.device)
+
+        self.mesh: Meshes = None
+        self.aux = None
+        self.initialize_mesh(mesh_path)
+        self.aux = self.mesh.aux
+
+    def initialize_mesh(self, mesh_paths):
+        self.mesh: Meshes = py3dio.load_objs_as_meshes(mesh_paths, create_texture_atlas=False, device=self.device)
+
 
     def cuda(self, deviceId=None):
         super().cuda(deviceId)
@@ -54,7 +63,8 @@ class RenderModule(pl.LightningModule):
         default_raster_settings = RasterizationSettings(
             image_size=512,
             blur_radius=0.0,
-            faces_per_pixel=1
+            faces_per_pixel=1,
+            perspective_correct=True
         )
 
         default_lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
@@ -90,9 +100,8 @@ class RenderModule(pl.LightningModule):
         max_d = torch.max(distances)
         self.change_camera(*look_at_view_transform(max_d, elev, azim))
 
-
     def show_render(self, camera_params=None, return_image=False):
-        image = self.render(camera_params).cpu().detach().numpy()
+        image = self.render(camera_params).clamp(0,1).cpu().detach().numpy()
         figure = plt.figure(figsize=(10, 10))
         plt.imshow(image)
         plt.grid("off")
