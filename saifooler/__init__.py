@@ -15,10 +15,10 @@ from pytorch3d.renderer import (
     TexturesVertex
 )
 
-# extend TexturesUV
 from pytorch3d.structures import Meshes
 
 
+# extend TexturesUV
 def set_maps(self: TexturesUV, maps):
     from pytorch3d.renderer.mesh.textures import _pad_texture_maps
     if torch.is_tensor(maps):
