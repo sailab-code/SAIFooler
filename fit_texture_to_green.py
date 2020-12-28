@@ -7,7 +7,7 @@ from saifooler.texture_atlas_module import TextureAtlasModule
 from saifooler.texture_module import TextureModule
 import matplotlib.pyplot as plt
 
-mesh_path = "./meshes/toilet/toilet.obj"
+mesh_path = "./meshes/table_living_room/table_living_room.obj"
 
 
 class ColorTargetDataModule(pl.LightningDataModule):
@@ -16,14 +16,16 @@ class ColorTargetDataModule(pl.LightningDataModule):
         self.target_color = target_color
 
     def train_dataloader(self):
-        inps = torch.tensor([[3.5, 60., 125.]])
+        inps = torch.tensor([[1.5, 60., 125.]])
         targets = self.target_color.unsqueeze(0)
         dset = TensorDataset(inps, targets)
         return DataLoader(dset, batch_size=1)
 
 
 if __name__ == '__main__':
-    tex_module = TextureAtlasModule(mesh_path, texture_atlas_size=4)
+    tex_module = TextureAtlasModule(mesh_path, texture_atlas_size=256)
+    # tex_module = TextureModule(mesh_path)
+
     dm = ColorTargetDataModule(torch.tensor([1., 0., 0.]))
 
     trainer = pl.Trainer(max_epochs=1, gpus=1)
@@ -42,8 +44,8 @@ if __name__ == '__main__':
         (3.5, -45., 275.)
     ]
 
-    for vp in viewpoints:
-        tex_module.show_render(vp)
+    """for vp in viewpoints:
+        tex_module.show_render(vp)"""
 
 
 

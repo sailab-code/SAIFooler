@@ -12,13 +12,13 @@ def get_mesh_path(mesh_name):
 
 if __name__ == '__main__':
     # mesh_name = 'toilet'
-    mesh_name = 'cube_of_power'
+    mesh_name = 'table_living_room'
 
     # rm = TextureModule(get_mesh_path(mesh_name))
-    # rm = RenderModule(get_mesh_path(mesh_name))
-    rm = TextureAtlasModule(get_mesh_path(mesh_name), texture_atlas_size=1024)
+    rm = RenderModule(get_mesh_path(mesh_name))
+    # rm = TextureAtlasModule(get_mesh_path(mesh_name), texture_atlas_size=1024)
 
     rm.to('cuda:0')
-    rm.show_textures()
+    #rm.show_textures()
 
-    figure = rm.show_render(camera_params=(3.5, 45., 180.), return_image=False)
+    figure = rm.show_render(camera_params=(2.5, 45., 180.), return_image=False)
