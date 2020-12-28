@@ -30,14 +30,15 @@ epsilons = [0, .05, .1, .15, .2, .25, .3]
 
 
 class MeshDataModule(pl.LightningDataModule):
-    def __init__(self, target_class, elev=0., distance=0.):
+    def __init__(self, target_class, elev=0., distance=0., steps=6):
         super().__init__()
         self.target_class = target_class
         self.elev = elev
         self.distance = distance
+        self.steps = steps
 
     def train_dataloader(self):
-        orientations = torch.arange(0., 360., 60.)
+        orientations = torch.linspace(0., 360., self.steps)
 
         inps = torch.zeros((orientations.shape[0], 3))
         inps[:,0], inps[:,1], inps[:,2] = self.distance, self.elev, orientations
@@ -65,24 +66,38 @@ if __name__ == '__main__':
         sys.exit("Wrong model!")
 
     used_model.eval()
-
-    texture_module = TextureModule(mesh_path="../meshes/table_living_room/table_living_room.obj")
+    mesh_path = "../meshes/table_living_room/table_living_room.obj"
+    #mesh_path = "../meshes/candle/candle.obj"
+    texture_module = TextureModule(mesh_path=mesh_path)
     texture_module.to(device)
 
-    data_loader = MeshDataModule(target_class=532, elev=25, distance=2.5).train_dataloader()
+    # target=470
+    target = 532
+    # distance = 0.25
+    distance = 2.0
+    data_loader = MeshDataModule(target_class=target, elev=10, distance=distance, steps=30).train_dataloader()
 
     accuracies = []
     examples = []
 
-    class_names = {532: "table_living_room"}
-    imagenet_label_tensor = torch.tensor([532])
+
+    class_names = {532: "table_living_room", 470: "candle"}
+
+    imagenet_label_tensor = torch.tensor([target])
     # Make a grid from batch
     for inputs, classes in iter(data_loader):
         batch = inputs.shape[0]
         inputs = inputs.squeeze(0)
 
         images = texture_module.render(inputs)
-        images = images.permute(2,0,1).unsqueeze(0)
+        #
+        mean = torch.tensor([0.485, 0.456, 0.406],device=device)
+        std = torch.tensor([0.229, 0.224, 0.225], device=device)
+        images = (images - mean) / std
+        images = images.permute(2, 0, 1)
+        #images = input_transforms(images)
+        images = images.unsqueeze(0)
+
 
         print(f"Ground truth classes: \t {[class_names[int(x)] for x in classes]}")
         out = torchvision.utils.make_grid(images)
@@ -93,7 +108,10 @@ if __name__ == '__main__':
         top_3_val, top3_idx = torch.topk(pred, 3, dim=1)
         #pred_class = visualize_model(used_model, inputs, classes, device, idx2label, num_images=batch,
         #                            filter_classes=filter_classes, imagenet_label_tensor=imagenet_label_tensor)
-        print(f"Predicted classes: \t \t {top_3_val}, {top3_idx}")
+        print(f"Predicted classes: \t \t {[class_names[int(x)] if int(x) in class_names else str(int(x)) for x in top3_idx[0]]}")
+        arg_max = int(torch.argmax(top_3_val))
+        top_idx = int(top3_idx[0][arg_max])
+        #print(f"Predicted class: \t \t {class_names[top_idx] if top_idx in class_names else str(top_idx) }")
 
     """# Run test for each epsilon
     for eps in epsilons:

@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     filter_classes = ["toilet_seat"]
 
-    used_model_id = "mobilenet"
+    used_model_id = "inception"
 
     def checkfun(args):
         az = Path(args)

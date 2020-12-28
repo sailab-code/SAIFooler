@@ -57,17 +57,17 @@ class RenderModule(pl.LightningModule):
         self.renderer.to(device)
 
     def __make_default_renderer(self):
-        R, T = look_at_view_transform(0.5, 10, 180)
+        R, T = look_at_view_transform(0.5, 45, 180)
         default_camera = FoVPerspectiveCameras(device=self.device, R=R, T=T)
 
         default_raster_settings = RasterizationSettings(
-            image_size=512,
+            image_size=224,
             blur_radius=0.0,
             faces_per_pixel=1,
             perspective_correct=True
         )
 
-        default_lights = PointLights(device=self.device, location=[[0.0, 0.0, -3.0]])
+        default_lights = PointLights(device=self.device, location=[[0.0, 5.0, 0.0]])
 
         return MeshRenderer(
             rasterizer=MeshRasterizer(
