@@ -43,14 +43,21 @@ class TextureModule(RenderModule):
     def configure_optimizers(self):
         return Adam([self.tex_filter], lr=0.5)
 
-    def show_textures(self, title=""):
+    def show_textures(self, title="model"):
+        merged_texture = self.mesh.textures.maps_padded()
+        plt.figure(figsize=(7, 7))
+        plt.imshow(merged_texture.squeeze().detach().cpu().numpy())
+        plt.title(f"{title}: merged texture")
+        plt.grid("off")
+        plt.axis("off")
+        plt.show()
+
         textures = self.mesh.textures.get_textures()
-        for texture in textures:
+
+        for idx, texture in enumerate(textures):
             plt.figure(figsize=(7, 7))
-            #texture_image = self.apply_filter().maps_padded()
-            texture_image = texture
-            plt.imshow(texture_image.detach().cpu().numpy())
-            plt.title(title)
+            plt.imshow(texture.detach().cpu().numpy())
+            plt.title(f"{title}: texture {idx}")
             plt.grid("off")
             plt.axis("off")
             plt.show()
