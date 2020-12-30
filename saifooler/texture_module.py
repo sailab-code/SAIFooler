@@ -43,18 +43,22 @@ class TextureModule(RenderModule):
     def configure_optimizers(self):
         return Adam([self.tex_filter], lr=0.5)
 
-    def show_texture(self):
-        plt.figure(figsize=(7, 7))
-        texture_image = self.apply_filter().maps_padded()
-        plt.imshow(texture_image.squeeze().detach().cpu().numpy())
-        plt.grid("off")
-        plt.axis("off")
-        plt.show()
+    def show_textures(self, title=""):
+        textures = self.mesh.textures.get_textures()
+        for texture in textures:
+            plt.figure(figsize=(7, 7))
+            #texture_image = self.apply_filter().maps_padded()
+            texture_image = texture
+            plt.imshow(texture_image.detach().cpu().numpy())
+            plt.title(title)
+            plt.grid("off")
+            plt.axis("off")
+            plt.show()
 
     def on_train_start(self) -> None:
         self.show_render()
-        self.show_texture()
+        self.show_textures()
 
     def on_train_end(self) -> None:
         self.show_render()
-        self.show_texture()
+        self.show_textures()
