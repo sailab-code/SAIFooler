@@ -9,6 +9,8 @@ from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 import matplotlib.pyplot as plt
 
+from saifooler.viewers.viewer import Viewer3D
+
 use_cuda = False
 dev = 0
 model_name = "inception"
@@ -19,6 +21,15 @@ mesh_path = "./meshes/table_living_room/table_living_room.obj"
 
 target_class = 532
 epsilon = 0.66
+
+views_module = OrientationDataModule(target_class, 45., 2., 4)
+views_module.setup()
+
+def view_model(viewer_):
+    with torch.no_grad():
+        viewer_.multi_view_grid(views_module.inputs)
+        viewer_.textures()
+
 
 if __name__ == '__main__':
     print("CUDA Available: ", torch.cuda.is_available())
@@ -35,21 +46,10 @@ if __name__ == '__main__':
     classifier = ImageNetClassifier(used_model)
     data_module = OrientationDataModule(target_class, 10., 2., 30)
     attacker = FGSMAttack(mesh_path, render_module, classifier, epsilon)
+    viewer = Viewer3D(attacker)
 
-    plt.figure(figsize=(7, 7))
-    plt.imshow(attacker.render().detach().cpu().numpy())
-    plt.title(f"before: rendering")
-    plt.grid("off")
-    plt.axis("off")
-    plt.show()
-
-    for idx, texture in enumerate(attacker.get_textures()):
-        plt.figure(figsize=(7, 7))
-        plt.imshow(texture.detach().cpu().numpy())
-        plt.title(f"before: texture {idx}")
-        plt.grid("off")
-        plt.axis("off")
-        plt.show()
+    # show model before training
+    view_model(viewer)
 
     trainer = pl.Trainer(
         num_sanity_val_steps=0,
@@ -58,20 +58,12 @@ if __name__ == '__main__':
         progress_bar_refresh_rate=0,
         gpus=1
     )
+
+    print("Attack begin")
     trainer.fit(attacker, datamodule=data_module)
+    print("Testing")
     trainer.test(attacker, datamodule=data_module)
+    print("Attack end")
 
-    for idx, texture in enumerate(attacker.get_textures()):
-        plt.figure(figsize=(7, 7))
-        plt.imshow(texture.detach().cpu().numpy())
-        plt.title(f"after: texture {idx}")
-        plt.grid("off")
-        plt.axis("off")
-        plt.show()
-
-    plt.figure(figsize=(7, 7))
-    plt.imshow(attacker.render().detach().cpu().numpy())
-    plt.title(f"after: rendering")
-    plt.grid("off")
-    plt.axis("off")
-    plt.show()
+    # show model after training
+    view_model(viewer)
