@@ -3,9 +3,8 @@ from typing import Any
 import torch
 from pytorch3d.renderer import look_at_view_transform
 from torch.optim import Adam
-from torch.utils.data import Dataset, TensorDataset, DataLoader
 
-from saifooler.render_module import RenderModule
+from saifooler.old.render_module import RenderModule
 import matplotlib.pyplot as plt
 
 

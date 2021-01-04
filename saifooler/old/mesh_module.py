@@ -1,11 +1,8 @@
-from typing import Any
-
 import torch
 from torch.optim import Adam
-from torch.utils.data import Dataset, TensorDataset, DataLoader
 
 from saifooler import default_renderer, default_device
-from saifooler.render_module import RenderModule
+from saifooler.old.render_module import RenderModule
 
 import matplotlib.pyplot as plt
 
