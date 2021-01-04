@@ -20,6 +20,11 @@ class ImageNetClassifier(Classifier):
             for key, val in json.load(open(class_index_path)).items()
         }
 
+    def to(self, device):
+        super().to(device)
+        self.mean = self.mean.to(device)
+        self.std = self.std.to(device)
+
     def get_class_label(self, class_id: int):
         return self.class_dict[class_id]
 

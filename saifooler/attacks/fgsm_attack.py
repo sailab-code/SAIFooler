@@ -97,7 +97,7 @@ class FGSMAttack(pl.LightningModule):
     def handle_batch(self, batch):
         render_inputs, targets = batch
 
-        total_loss = torch.zeros(1)
+        total_loss = torch.zeros(1, device=self.device)
         predictions = []
         for render_input, target in zip(render_inputs, targets):
             self.apply_input(*render_input)
@@ -114,7 +114,7 @@ class FGSMAttack(pl.LightningModule):
 
             total_loss = total_loss + F.nll_loss(class_tensor, target)
 
-        return total_loss, torch.tensor(predictions), targets
+        return total_loss, torch.tensor(predictions, device=self.device), targets
 
     def configure_optimizers(self):
         return FGSMOptimizer(self.parameters(), self.epsilon)
@@ -161,3 +161,18 @@ class FGSMAttack(pl.LightningModule):
 
     def on_test_epoch_end(self):
         self.__log_accuracy(self.test_accuracy, "test")
+
+    def to(self, device):
+        self.mesh = self.mesh.to(device)
+        self.mesh.textures = self.mesh.textures.to(device)
+        self.render_module.to(device)
+        self.classifier.to(device)
+        super().to(device)
+
+    def cuda(self, deviceId=None):
+        self.to(deviceId)
+        super().cuda(deviceId)
+
+    def cpu(self):
+        self.to('cpu')
+        super().cpu()

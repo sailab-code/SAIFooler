@@ -55,7 +55,8 @@ if __name__ == '__main__':
         num_sanity_val_steps=0,
         max_epochs=1,
         weights_summary=None,
-        progress_bar_refresh_rate=0
+        progress_bar_refresh_rate=0,
+        gpus=1
     )
     trainer.fit(attacker, datamodule=data_module)
     trainer.test(attacker, datamodule=data_module)

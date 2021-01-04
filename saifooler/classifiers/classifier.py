@@ -33,3 +33,16 @@ class Classifier(pl.LightningModule):
         normalized_image = self.normalize_image(image)
         return self.model(normalized_image)
 
+    def to(self, device):
+        super().to(device)
+        self.model.to(device)
+        self.model.eval()
+
+    def cuda(self, device=None):
+        super().cuda(device)
+        self.to(device)
+
+    def cpu(self):
+        super().cpu()
+        self.to('cpu')
+

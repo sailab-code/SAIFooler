@@ -65,9 +65,8 @@ class RenderModule(pl.LightningModule):
             )
         )
 
-
     def update_camera(self, r, t):
-        self.cameras.R, self.cameras.T = r, t
+        self.cameras.R, self.cameras.T = r.to(self.device), t.to(self.device)
 
     def look_at_mesh(self, distance, elevation, azimuth):
         self.update_camera(*look_at_view_transform(distance, elevation, azimuth))
@@ -79,3 +78,16 @@ class RenderModule(pl.LightningModule):
 
     def forward(self, mesh):
         return self.render(mesh)
+
+    def to(self, device):
+        self.renderer.to(device)
+        self.cameras.to(device)
+        super().to(device)
+
+    def cuda(self, device=None):
+        super().cuda(device)
+        self.to(device)
+
+    def cpu(self):
+        super().cpu()
+        self.to('cpu')
