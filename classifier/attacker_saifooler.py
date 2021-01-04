@@ -1,22 +1,14 @@
 from __future__ import print_function, division
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
 import numpy as np
 import torchvision
-from torchvision import datasets, models, transforms
+from torchvision import models
 import matplotlib.pyplot as plt
-import time
-import os
-import copy
 import sys
-from utils import input_transforms, imshow, visualize_model, idx2label, cls2label, \
-    label2idx, imshow_transform_notensor
-from pathlib import Path
+from utils import imshow, imshow_transform_notensor
 
-from saifooler.texture_module import TextureModule
+from saifooler.old.texture_module import TextureModule
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 

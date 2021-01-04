@@ -1,11 +1,8 @@
 import torch
 import pytorch_lightning as pl
-from pytorch3d.renderer import look_at_view_transform
-from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader
 
-from saifooler.texture_atlas_module import TextureAtlasModule
-from saifooler.texture_module import TextureModule
-import matplotlib.pyplot as plt
+from saifooler.old.texture_atlas_module import TextureAtlasModule
 
 mesh_path = "./meshes/table_living_room/table_living_room.obj"
 

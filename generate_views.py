@@ -1,5 +1,4 @@
-from saifooler.texture_module import RenderModule
-from pytorch3d.renderer import look_at_view_transform
+from saifooler.old.texture_module import RenderModule
 import matplotlib.pyplot as plt
 
 meshes = {
