@@ -1,11 +1,9 @@
 import torch
 import pytorch_lightning as pl
-from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader
 
-from saifooler.mesh_module import MeshModule
-from saifooler.render_module import RenderModule
-from saifooler.texture_module import TextureModule
-import matplotlib.pyplot as plt
+from saifooler.old.mesh_module import MeshModule
+from saifooler.old.render_module import RenderModule
 
 book_mesh_path = "./meshes/book/book_open_01.obj"
 candle_mesh_path = "./meshes/candle/candle_test.obj"
