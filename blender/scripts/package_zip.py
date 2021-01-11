@@ -8,6 +8,7 @@ import sys
 import os
 import zipfile
 import csv
+import json
 
 # Get paths from command line arguments
 argv = sys.argv
@@ -19,16 +20,18 @@ else:
     model_path = argv[1]
     mat_def_path = argv[2]
     zip_path = argv[3]
-    # Parse the csv file to get all the texture paths (we assume they are in the same folder of the .csv file)
+    # Parse the json file to get all the texture paths (we assume they are in the same folder of the .json file)
     textures_paths = []
     with open(mat_def_path) as mat_def_file:
-        csv_reader = csv.reader(mat_def_file, delimiter=',')
-        # For each row, use the material name as key and the textures names as value
+        mat_def = json.load(mat_def_file)
+
+        # For each material, use the material name as key and the textures names as value
         # Note: the third row, the metallic, we don't use because .obj doesn't support it
-        for row in csv_reader:
-            textures_paths.append(os.path.split(mat_def_path)[0] + "/" + row[1])
-            textures_paths.append(os.path.split(mat_def_path)[0] + "/" + row[2])
-            textures_paths.append(os.path.split(mat_def_path)[0] + "/" + row[3])
+        for mat_name, mat in mat_def.items():
+            textures_paths += [
+                os.path.join(os.path.dirname(mat_def_path), tex_path)
+                for tex_name, tex_path in mat.items()]
+
     if len(textures_paths) <= 0:
         print("Warning: there are no textures defined in " + mat_def_path)
     # Make sure the zip path exists

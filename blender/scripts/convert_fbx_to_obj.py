@@ -5,7 +5,7 @@
 
 import sys
 import os
-import csv
+import json
 
 # Import blender python
 # Note: it will give an error in Pycharm, no way around it
@@ -18,20 +18,21 @@ argv = sys.argv
 argv = argv[argv.index("--") + 1:]
 
 # We need three paths
-if len(argv) < 3:
-    print("Error: the script needs exactly three arguments - import_path, export_path and mat_def_path")
+if len(argv) < 4:
+    print("Error: the script needs exactly four arguments - import_path, textures_path, mat_def_path, export_path")
 else:
     import_path = argv[0]
-    export_path = argv[1]
+    textures_path = argv[1]
     mat_def_path = argv[2]
-    # Parse the csv file to get which texture is associated with which material
+    export_path = argv[3]
+    # Parse the json file to get which texture is associated with which material
     material_texture_table = dict()
     with open(mat_def_path) as mat_def_file:
-        csv_reader = csv.reader(mat_def_file, delimiter=',')
+        mat_def = json.load(mat_def_file)
         # For each row, use the material name as key and the textures names as value
         # Note: the third row, the metallic, we don't use because .obj doesn't support it
-        for row in csv_reader:
-            material_texture_table[row[0]] = [row[1], row[2], row[3]]
+        for mat_name, mat in mat_def.items():
+            material_texture_table[mat_name] = [mat['albedo'], mat['normal'], mat['metallic']]
     if len(material_texture_table) <= 0:
         print("Warning: the material texture table derived from " + mat_def_path + " is empty")
     os.makedirs(os.path.dirname(export_path), exist_ok=True)
@@ -65,9 +66,18 @@ else:
                     links = imported_obj_current_mat.node_tree.links
                     # Get the material shader node
                     imported_obj_current_mat_shader = nodes.get("Principled BSDF")
-                    # Get the absolute path of the textures from the table (we assume the textures are in the same folder as the .csv file)
-                    imported_object_current_mat_tex_path_albedo = os.path.split(mat_def_path)[0] + "/" + material_texture_table[imported_obj_current_mat.name][0]
-                    imported_object_current_mat_tex_path_normal = os.path.split(mat_def_path)[0] + "/" + material_texture_table[imported_obj_current_mat.name][1]
+                    # Get the absolute path of the textures from the table (we assume the textures are in the same folder as the mat definition file)
+
+                    imported_object_current_mat_tex_path_albedo = os.path.join(
+                        textures_path,
+                        material_texture_table[imported_obj_current_mat.name][0]
+                    )
+
+                    imported_object_current_mat_tex_path_normal = os.path.join(
+                        textures_path,
+                        material_texture_table[imported_obj_current_mat.name][1]
+                    )
+
                     # Create Image Texture node and load the albedo texture
                     imported_obj_current_mat_tex_albedo = nodes.new("ShaderNodeTexImage")
                     imported_obj_current_mat_tex_albedo.image = bpy.data.images.load(imported_object_current_mat_tex_path_albedo)
