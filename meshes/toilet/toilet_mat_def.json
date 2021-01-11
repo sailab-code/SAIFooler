@@ -1,0 +1,12 @@
+{
+  "toilet_01": {
+    "albedo": "toilet_01_AlbedoTransparency.png",
+    "normal": "toilet_01_Normal.png",
+    "metallic": "toilet_01_MetallicSmoothness.png"
+  },
+  "toilet_01_cover": {
+    "albedo": "toilet_01_cover_AlbedoTransparency.png",
+    "normal": "toilet_01_cover_Normal.png",
+    "metallic": "toilet_01_cover_MetallicSmoothness.png"
+  }
+}
