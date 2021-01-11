@@ -2,7 +2,7 @@
 # absolute/path/to/blender.exe --background workspace.blend --python scripts/convert_fbx_to_obj.py -- absolute/path/to/import.fbx absolute/path/to/export.obj absolute/path/to/import_mat_def.csv
 
 # Import packages
-
+import shutil
 import sys
 import os
 import json
@@ -30,9 +30,11 @@ else:
     with open(mat_def_path) as mat_def_file:
         mat_def = json.load(mat_def_file)
         # For each row, use the material name as key and the textures names as value
-        # Note: the third row, the metallic, we don't use because .obj doesn't support it
         for mat_name, mat in mat_def.items():
             material_texture_table[mat_name] = [mat['albedo'], mat['normal'], mat['metallic']]
+        # Note: the third row, the metallic, will not be used because .obj doesn't support it
+        # so we copy it manually since Blender will not do it
+        shutil.copy2(os.path.join(textures_path, mat['metallic']), os.path.dirname(export_path))
     if len(material_texture_table) <= 0:
         print("Warning: the material texture table derived from " + mat_def_path + " is empty")
     os.makedirs(os.path.dirname(export_path), exist_ok=True)
