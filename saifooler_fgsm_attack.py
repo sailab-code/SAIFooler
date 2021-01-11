@@ -18,7 +18,7 @@ model_name = "inception"
 #model_name = "mobilenet"
 
 
-mesh_path = "./meshes/toilet"
+mesh_path = "./meshes/table_living_room"
 
 target_class = 532
 epsilon = 0.66
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     render_module = RenderModule()
     classifier = ImageNetClassifier(used_model)
     data_module = OrientationDataModule(target_class, 10., 2., 30)
-    attacker = FGSMAttack("./meshes/toilet/toilet.obj", render_module, classifier, epsilon)
+    attacker = FGSMAttack(mesh_object.mesh, render_module, classifier, epsilon)
     viewer = Viewer3D(attacker)
 
     # show model before training
@@ -71,7 +71,9 @@ if __name__ == '__main__':
     # show model after training
     view_model(viewer)
 
-    attacked_mesh = mesh_object.copy_to_dir("./meshes/toilet_attacked", overwrite=True)
+    attacked_mesh = mesh_object.copy_to_dir(mesh_path+"_attacked", overwrite=True)
 
     for mat_name, new_tex in attacker.get_textures().items():
         attacked_mesh.replace_texture(mat_name, "albedo", new_tex)
+
+    attacked_mesh.save_to_zip()

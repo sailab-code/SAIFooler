@@ -9,6 +9,7 @@ import json
 import os
 import pytorch3d.io as py3dio
 import shutil
+import zipfile
 
 
 
@@ -54,13 +55,37 @@ class MeshDescriptor:
     def replace_texture(self, mat_name, texture_name, texture: Union[ImageType, torch.Tensor]):
         if isinstance(texture, torch.Tensor):
             transform = torchvision.transforms.ToPILImage()
-            tex_image = transform(texture)
+            tex_image = transform(texture.permute(2, 0, 1))
         elif isinstance(texture, ImageType):
             tex_image = texture
         else:
             raise ValueError("texture must be a tensor or a PIL image")
 
         tex_image.save(self.textures_path[mat_name][texture_name])
+
+    def save_to_zip(self, zip_path=None):
+        if zip_path is None:
+            zip_path = os.path.join(
+                self.mesh_dir,
+                f"{os.path.basename(self.mesh_dir)}.zip")
+
+        textures_paths = self.__get_textures_paths()
+        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+        compression = zipfile.ZIP_DEFLATED
+
+        with zipfile.ZipFile(zip_path, "w") as zip_obj:
+            model_path = self.obj_path
+            mat_def_path = self.mat_def_path
+            print("Zipping " + model_path + " as " + os.path.basename(model_path))
+            zip_obj.write(model_path, compress_type=compression, arcname=os.path.basename(model_path))
+            print("Zipping " + mat_def_path + " as " + os.path.basename(mat_def_path))
+            zip_obj.write(mat_def_path, compress_type=compression, arcname=os.path.basename(mat_def_path))
+            if textures_paths is not None:
+                for texture_path in textures_paths:
+                    print("Zipping " + texture_path + " as " + os.path.basename(texture_path))
+                    zip_obj.write(texture_path, compress_type=compression, arcname=os.path.basename(texture_path))
+
+        return zip_path
 
     def __get_files_paths(self):
         return [
