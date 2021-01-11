@@ -12,7 +12,7 @@ class RenderModule(pl.LightningModule):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self,render_settings: Dict = None, *args, **kwargs):
+    def __init__(self, render_settings: Dict = None, *args, **kwargs):
         """
 
         :param mesh: ``Union[str, Meshes]``: a Meshes object or a string path to the .obj file

@@ -20,7 +20,7 @@ class Viewer3D:
     def __make_grid(images):
         n_imgs_per_row = int(sqrt(len(images)))
         images = [image.permute(2, 0, 1) for image in images]
-        grid = torchvision.utils.make_grid(images, nrow=n_imgs_per_row)
+        grid = torchvision.utils.make_grid(images, nrow=n_imgs_per_row, scale_each=True)
         return grid.permute(1, 2, 0)
 
     def multi_view_grid(self, views):
@@ -34,9 +34,9 @@ class Viewer3D:
         fig.show()
 
     def textures(self):
-        textures = [texture.cpu() for texture in self.module.get_textures()]
-        grid = self.__make_grid(textures)
-        fig = self.__create_figure(grid, "Textures")
-        fig.show()
+        textures = {tex_name: texture.cpu() for tex_name, texture in self.module.get_textures().items()}
+        for tex_name, tex in textures.items():
+            fig = self.__create_figure(tex, tex_name)
+            fig.show()
 
 

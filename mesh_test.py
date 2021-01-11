@@ -48,30 +48,9 @@ if __name__ == '__main__':
     render_module = RenderModule()
     classifier = ImageNetClassifier(used_model)
     data_module = OrientationDataModule(target_class, 10., 2., 30)
-    attacker = FGSMAttack("./meshes/toilet/toilet.obj", render_module, classifier, epsilon)
+    attacker = FGSMAttack(mesh_object.mesh, render_module, classifier, epsilon)
     viewer = Viewer3D(attacker)
 
     # show model before training
     view_model(viewer)
 
-    trainer = pl.Trainer(
-        num_sanity_val_steps=0,
-        max_epochs=1,
-        weights_summary=None,
-        progress_bar_refresh_rate=0,
-        gpus=1
-    )
-
-    print("Attack begin")
-    trainer.fit(attacker, datamodule=data_module)
-    print("Testing")
-    trainer.test(attacker, datamodule=data_module)
-    print("Attack end")
-
-    # show model after training
-    view_model(viewer)
-
-    attacked_mesh = mesh_object.copy_to_dir("./meshes/toilet_attacked", overwrite=True)
-
-    for mat_name, new_tex in attacker.get_textures().items():
-        attacked_mesh.replace_texture(mat_name, "albedo", new_tex)

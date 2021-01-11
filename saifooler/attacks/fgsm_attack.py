@@ -92,7 +92,11 @@ class FGSMAttack(pl.LightningModule):
         return self.render_module.render(self.mesh)
 
     def get_textures(self):
-        return self.mesh.textures.get_textures()
+        textures = self.mesh.textures.get_textures()
+        return {
+            tex_name: texture.cpu()
+            for tex_name, texture in textures.items()
+        }
 
     def handle_batch(self, batch):
         render_inputs, targets = batch

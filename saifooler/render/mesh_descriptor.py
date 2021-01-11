@@ -1,6 +1,9 @@
 from typing import Any, Union
 
+import torch
+import torchvision
 from PIL import Image
+from PIL.Image import Image as ImageType
 from pytorch3d.structures import Meshes
 import json
 import os
@@ -45,11 +48,19 @@ class MeshDescriptor:
             os.path.basename(self.mat_def_path)
         )
 
-    def get_texture(self, mat_name, texture_name) -> Image:
+    def get_texture(self, mat_name, texture_name) -> ImageType:
         return Image.open(self.textures_path[mat_name][texture_name])
 
-    def replace_texture(self, mat_name, texture_name, texture: Image):
-        texture.save(self.textures_path[mat_name][texture_name])
+    def replace_texture(self, mat_name, texture_name, texture: Union[ImageType, torch.Tensor]):
+        if isinstance(texture, torch.Tensor):
+            transform = torchvision.transforms.ToPILImage()
+            tex_image = transform(texture)
+        elif isinstance(texture, ImageType):
+            tex_image = texture
+        else:
+            raise ValueError("texture must be a tensor or a PIL image")
+
+        tex_image.save(self.textures_path[mat_name][texture_name])
 
     def __get_files_paths(self):
         return [
