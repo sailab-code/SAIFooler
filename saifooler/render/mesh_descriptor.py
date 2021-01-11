@@ -9,7 +9,7 @@ import shutil
 
 
 
-class MeshObject:
+class MeshDescriptor:
     def __init__(self, mesh_dir, obj_name=None, mtl_name=None, mat_def_name=None):
 
         self.mesh_dir = mesh_dir
@@ -37,7 +37,7 @@ class MeshObject:
         for path in paths_to_copy:
             shutil.copy2(path, new_dir)
 
-        # return a MeshObject instance pointing to the new directory
+        # return a MeshDescriptor instance pointing to the new directory
         return self.__class__(
             new_dir,
             os.path.basename(self.obj_path),

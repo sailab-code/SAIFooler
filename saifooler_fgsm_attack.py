@@ -3,6 +3,7 @@ import pytorch_lightning as pl
 from torchvision import models
 import sys
 
+from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.render.render_module import RenderModule
 from saifooler.attacks.fgsm_attack import FGSMAttack
 from saifooler.data_modules.orientation_data_module import OrientationDataModule
@@ -42,10 +43,12 @@ if __name__ == '__main__':
     else:
         sys.exit("Wrong model!")
 
+    mesh_object = MeshDescriptor(mesh_path)
+
     render_module = RenderModule()
     classifier = ImageNetClassifier(used_model)
     data_module = OrientationDataModule(target_class, 10., 2., 30)
-    attacker = FGSMAttack(mesh_path, render_module, classifier, epsilon)
+    attacker = FGSMAttack(mesh_object.mesh, render_module, classifier, epsilon)
     viewer = Viewer3D(attacker)
 
     # show model before training
@@ -64,6 +67,9 @@ if __name__ == '__main__':
     print("Testing")
     trainer.test(attacker, datamodule=data_module)
     print("Attack end")
+
+
+
 
     # show model after training
     view_model(viewer)
