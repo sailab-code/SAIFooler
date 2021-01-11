@@ -112,11 +112,13 @@ class FGSMAttack(pl.LightningModule):
             predictions.append(class_predicted)
             target = target.unsqueeze(0)
 
+            current_loss = F.nll_loss(class_tensor, target)
+
             # if prediction is already wrong skip attack for this input
             if class_predicted != target:
-                continue
+                current_loss = current_loss * 0
 
-            total_loss = total_loss + F.nll_loss(class_tensor, target)
+            total_loss = total_loss + current_loss
 
         return total_loss, torch.tensor(predictions, device=self.device), targets
 
