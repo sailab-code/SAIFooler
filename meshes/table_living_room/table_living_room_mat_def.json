@@ -1,0 +1,8 @@
+{
+  "table_living_room_01":
+  {
+    "albedo": "table_living_room_01_AlbedoTransparency.png",
+    "normal": "table_living_room_01_Normal.png",
+    "metallic": "table_living_room_01_MetallicSmoothness.png"
+  }
+}
