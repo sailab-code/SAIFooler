@@ -16,7 +16,7 @@ class UnityRender:
 
     def look_at_mesh(self, distance, elevation, azimuth):
         position = camera_position_from_spherical_angles(distance, elevation, azimuth)
-        rotation = (-elevation, 180+azimuth, 0)
+        rotation = (180-elevation, azimuth, 180)
 
         self.agent.set_position(list(position.squeeze()))
         self.agent.set_rotation(rotation)

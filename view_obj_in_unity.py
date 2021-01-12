@@ -70,7 +70,6 @@ if __name__ == '__main__':
         unity_render.change_scene()
         unity_render.look_at_mesh(2., 10., 30.)
         unity_render.spawn_obj()
-        input("press to render")
         main_img = unity_render.render()
 
         plt.figure(figsize=(7,7))
