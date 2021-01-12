@@ -17,6 +17,7 @@ class MeshDescriptor:
     def __init__(self, mesh_dir, obj_name=None, mtl_name=None, mat_def_name=None):
 
         self.mesh_dir = mesh_dir
+        self.mesh_name = os.path.basename(mesh_dir)
 
         self.obj_path = self.__get_path(obj_name, ".obj")
         self.mtl_path = self.__get_path(mtl_name, ".mtl")
@@ -37,16 +38,40 @@ class MeshDescriptor:
             else:
                 raise RuntimeError("Directory already exists, aborting")
 
+        new_mesh_name = os.path.basename(new_dir)
         paths_to_copy = self.__get_files_paths() + self.__get_textures_paths()
-        for path in paths_to_copy:
-            shutil.copy2(path, new_dir)
+        for file_path in paths_to_copy:
+            filename = os.path.basename(file_path).replace(self.mesh_name, new_mesh_name)
+            shutil.copy2(file_path, os.path.join(new_dir, filename))
+
+        # obtain new paths
+        new_paths = [
+            path.replace(self.mesh_name, new_mesh_name) for path in
+            [
+                os.path.basename(self.obj_path),
+                os.path.basename(self.mtl_path),
+                os.path.basename(self.mat_def_path)
+            ]
+        ]
+
+        # replace texture names in mat_def file
+        with open(self.mat_def_path, "r") as src_mat_def_file:
+            src_mat_def = json.load(src_mat_def_file)
+
+        dst_mat_def = {
+            mat_name: {
+                tex_name: tex_path.replace(self.mesh_name, new_mesh_name)
+                for tex_name, tex_path in mat.items()
+            }
+            for mat_name, mat in src_mat_def.items()
+        }
+        with open(os.path.join(new_dir, new_paths[2]), "w") as dst_mat_def_file:
+            json.dump(dst_mat_def, dst_mat_def_file)
 
         # return a MeshDescriptor instance pointing to the new directory
         return self.__class__(
             new_dir,
-            os.path.basename(self.obj_path),
-            os.path.basename(self.mtl_path),
-            os.path.basename(self.mat_def_path)
+            *new_paths
         )
 
     def get_texture(self, mat_name, texture_name) -> ImageType:
