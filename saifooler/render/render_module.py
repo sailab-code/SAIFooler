@@ -25,7 +25,7 @@ class RenderModule(pl.LightningModule):
             render_settings = {}
 
         R, T = look_at_view_transform(1., 0., 0.)
-        self.cameras = FoVPerspectiveCameras(R=R, T=T, device=self.device)
+        self.cameras = FoVPerspectiveCameras(R=R, T=T, fov=60.0, znear=0.01, zfar=1000., device=self.device)
 
         raster_settings_dict = {
             'image_size': 224,

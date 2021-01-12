@@ -74,6 +74,6 @@ if __name__ == '__main__':
     attacked_mesh = mesh_object.copy_to_dir(mesh_path+"_attacked", overwrite=True)
 
     for mat_name, new_tex in attacker.get_textures().items():
-        attacked_mesh.replace_texture(mat_name, "albedo", new_tex)
+        attacked_mesh.replace_texture(mat_name, "albedo", torch.flipud(new_tex))
 
     attacked_mesh.save_to_zip()
