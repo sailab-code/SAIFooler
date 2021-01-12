@@ -51,7 +51,7 @@ if __name__ == '__main__':
     else:
         sys.exit("Wrong model!")
 
-    mesh_object = MeshDescriptor(mesh_path, obj_name="table_living_room.obj", mtl_name="table_living_room.mtl", mat_def_name="table_living_room_mat_def.json")
+    mesh_object = MeshDescriptor(mesh_path)
 
     render_module = RenderModule()
     classifier = ImageNetClassifier(used_model)
@@ -84,5 +84,6 @@ if __name__ == '__main__':
         plt.show()
     finally:
         input("Press to continue")
+        unity_render.despawn_obj()
         agent.delete()
 
