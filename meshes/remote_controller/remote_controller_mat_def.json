@@ -1,0 +1,14 @@
+{
+  "remote_controller_01":
+  {
+    "albedo": "remote_controller_01_AlbedoTransparency.png",
+    "normal": "remote_controller_01_Normal.png",
+    "metallic": "remote_controller_01_MetallicSmoothness.png"
+  },
+  "remote_controller_01_buttons":
+  {
+    "albedo": "remote_controller_01_buttons_AlbedoTransparency.png",
+    "normal": "remote_controller_01_buttons_Normal.png",
+    "metallic": "remote_controller_01_buttons_MetallicSmoothness.png"
+  }
+}
