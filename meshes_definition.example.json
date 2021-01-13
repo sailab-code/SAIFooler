@@ -1,0 +1,20 @@
+{
+    "remote_controller": {
+        "path": "./meshes/remote_controller",
+        "distance": 0.25,
+        "target_class": 761,
+        "elevation": 45
+    },
+    "table_living_room": {
+        "path": "./meshes/table_living_room",
+        "distance": 2.0,
+        "target_class": 532,
+        "elevation": 10
+    },
+    "toilet": {
+        "path": "./meshes/toilet",
+        "distance": 1.2,
+        "target_class": 861,
+        "elevation": 10
+    }
+}

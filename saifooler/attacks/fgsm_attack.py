@@ -103,6 +103,7 @@ class FGSMAttack(pl.LightningModule):
 
         total_loss = torch.zeros(1, device=self.device)
         predictions = []
+        # todo: see if operations can be batched
         for render_input, target in zip(render_inputs, targets):
             self.apply_input(*render_input)
             image = self.render()
@@ -112,7 +113,7 @@ class FGSMAttack(pl.LightningModule):
             predictions.append(class_predicted)
             target = target.unsqueeze(0)
 
-            current_loss = F.nll_loss(class_tensor, target)
+            current_loss = F.nll_loss(class_tensor, target, reduction="mean")
 
             # if prediction is already wrong skip attack for this input
             if class_predicted != target:
@@ -120,7 +121,8 @@ class FGSMAttack(pl.LightningModule):
 
             total_loss = total_loss + current_loss
 
-        return total_loss, torch.tensor(predictions, device=self.device), targets
+        # todo: when removing the for loop, remove also scaling factor below
+        return total_loss / render_inputs.shape[0], torch.tensor(predictions, device=self.device), targets
 
     def configure_optimizers(self):
         return FGSMOptimizer(self.parameters(), self.epsilon)
