@@ -39,40 +39,95 @@ class MeshDescriptor:
                 raise RuntimeError("Directory already exists, aborting")
 
         new_mesh_name = os.path.basename(new_dir)
-        paths_to_copy = self.__get_files_paths() + self.__get_textures_paths()
-        for file_path in paths_to_copy:
-            filename = os.path.basename(file_path).replace(self.mesh_name, new_mesh_name)
-            shutil.copy2(file_path, os.path.join(new_dir, filename))
 
-        # obtain new paths
-        new_paths = [
-            path.replace(self.mesh_name, new_mesh_name) for path in
-            [
-                os.path.basename(self.obj_path),
-                os.path.basename(self.mtl_path),
-                os.path.basename(self.mat_def_path)
-            ]
-        ]
-
-        # replace texture names in mat_def file
         with open(self.mat_def_path, "r") as src_mat_def_file:
             src_mat_def = json.load(src_mat_def_file)
 
-        dst_mat_def = {
-            mat_name: {
-                tex_name: tex_path.replace(self.mesh_name, new_mesh_name)
-                for tex_name, tex_path in mat.items()
-            }
-            for mat_name, mat in src_mat_def.items()
+        dst_mat_def = self.__get_new_mat_def(src_mat_def, new_mesh_name)
+
+        # obtain new obj, mtl, mat_def paths
+        new_paths = {
+            file: path.replace(self.mesh_name, new_mesh_name) for file, path in
+            zip(['obj', 'mtl', 'mat_def'], [
+                os.path.basename(self.obj_path),
+                os.path.basename(self.mtl_path),
+                os.path.basename(self.mat_def_path)
+            ])
         }
-        with open(os.path.join(new_dir, new_paths[2]), "w") as dst_mat_def_file:
-            json.dump(dst_mat_def, dst_mat_def_file)
+
+        # copy textures with new names
+        self.__copy_textures_to_new_dir(src_mat_def, dst_mat_def, new_dir)
+
+        # replace texture names in mat_def file
+        self.__replace_tex_names_in_mat_def_file(dst_mat_def, os.path.join(new_dir, new_paths['mat_def']))
+
+        # replace texture names in mtl file
+        self.__replace_tex_names_in_mtl_file(src_mat_def, dst_mat_def, os.path.join(new_dir, new_paths['mtl']))
+
+        # replace mtl name in obj file
+        self.__replace_mtl_name_in_obj_file(new_paths['mtl'], os.path.join(new_dir, new_paths['obj']))
 
         # return a MeshDescriptor instance pointing to the new directory
         return self.__class__(
             new_dir,
-            *new_paths
+            obj_name=new_paths['obj'],
+            mtl_name=new_paths['mtl'],
+            mat_def_name=new_paths['mat_def']
         )
+
+    def __get_new_mat_def(self, src_mat_def, new_mesh_name):
+        return {
+                mat_name: {
+                    tex_name: tex_path.replace(self.mesh_name, new_mesh_name)
+                    for tex_name, tex_path in mat.items()
+                }
+                for mat_name, mat in src_mat_def.items()
+            }
+
+    def __copy_textures_to_new_dir(self, src_mat_def, dst_mat_def, new_dir):
+        for mat_name, mat in src_mat_def.items():
+            for tex_name, tex_path in mat.items():
+                src_tex_path = os.path.join(self.mesh_dir, tex_path)
+                dst_tex_path = os.path.join(new_dir, dst_mat_def[mat_name][tex_name])
+                shutil.copy2(src_tex_path, dst_tex_path)
+
+    def __replace_tex_names_in_mtl_file(self, src_mat_def, dst_mat_def, dst_mtl_path):
+        with open(self.mtl_path, "r") as src_mtl_file:
+            mtl_lines = src_mtl_file.readlines()
+
+        curr_mat_name = None
+        for idx, line in enumerate(mtl_lines):
+            if line.startswith("newmtl"):
+                curr_mat_name = line.split(" ")[1].strip()
+
+            if line.startswith("map_Kd"):
+                mtl_lines[idx] = line.replace(
+                    src_mat_def[curr_mat_name]['albedo'],
+                    dst_mat_def[curr_mat_name]['albedo']
+                )
+
+            if line.startswith("map_Bump"):
+                mtl_lines[idx] = line.replace(
+                    src_mat_def[curr_mat_name]['normal'],
+                    dst_mat_def[curr_mat_name]['normal']
+                )
+
+        with open(dst_mtl_path, "w") as dst_mtl_file:
+            dst_mtl_file.writelines(mtl_lines)
+
+    def __replace_tex_names_in_mat_def_file(self, dst_mat_def, dst_mat_def_path):
+        with open(dst_mat_def_path, "w") as dst_mat_def_file:
+            json.dump(dst_mat_def, dst_mat_def_file)
+
+    def __replace_mtl_name_in_obj_file(self, new_mtl_path, dst_obj_path):
+        src_obj_file = open(self.obj_path, "r")
+        obj_data = src_obj_file.read()
+        src_obj_file.close()
+
+        obj_data = obj_data.replace(os.path.basename(self.mtl_path), new_mtl_path)
+
+        with open(dst_obj_path, "w") as dst_obj_file:
+            dst_obj_file.write(obj_data)
 
     def get_texture(self, mat_name, texture_name) -> ImageType:
         return Image.open(self.textures_path[mat_name][texture_name])
