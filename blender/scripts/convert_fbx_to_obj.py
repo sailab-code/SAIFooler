@@ -32,9 +32,11 @@ else:
         # For each row, use the material name as key and the textures names as value
         for mat_name, mat in mat_def.items():
             material_texture_table[mat_name] = [mat['albedo'], mat['normal'], mat['metallic']]
-        # Note: the third row, the metallic, will not be used because .obj doesn't support it
-        # so we copy it manually since Blender will not do it
-        shutil.copy2(os.path.join(textures_path, mat['metallic']), os.path.dirname(export_path))
+            # Note: the third row, the metallic, will not be used because .obj doesn't support it
+            # so we copy it manually since Blender will not do it
+            print(f"{os.path.join(textures_path, mat['metallic'])} => {os.path.dirname(export_path)}")
+            shutil.copy2(os.path.join(textures_path, mat['metallic']), os.path.dirname(export_path))
+
     if len(material_texture_table) <= 0:
         print("Warning: the material texture table derived from " + mat_def_path + " is empty")
     os.makedirs(os.path.dirname(export_path), exist_ok=True)
