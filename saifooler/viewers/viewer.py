@@ -17,7 +17,7 @@ class Viewer3D:
         return fig
 
     @staticmethod
-    def __make_grid(images):
+    def make_grid(images):
         n_imgs_per_row = int(sqrt(len(images)))
         images = [image.permute(2, 0, 1) for image in images]
         grid = torchvision.utils.make_grid(images, nrow=n_imgs_per_row, scale_each=True)
@@ -29,7 +29,7 @@ class Viewer3D:
             self.module.apply_input(*view)
             image = self.module.render()
             images.append(image.cpu())
-        grid = self.__make_grid(images)
+        grid = self.make_grid(images)
         fig = self.__create_figure(grid, "Multi-view renders")
         fig.show()
 

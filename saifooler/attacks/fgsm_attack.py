@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 import pytorch3d.io as py3dio
 
+from saifooler.viewers.viewer import Viewer3D
+
 
 class FGSMOptimizer(torch.optim.Optimizer):
     def __init__(self, params, epsilon):
@@ -52,7 +54,7 @@ class FGSMAttack(pl.LightningModule):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon, *args, **kwargs):
+    def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon, mesh_name="", *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if isinstance(mesh, Meshes):
@@ -61,6 +63,7 @@ class FGSMAttack(pl.LightningModule):
             self.mesh: Meshes = py3dio.load_objs_as_meshes([mesh], device=self.device)
 
         self.render_module = render_module
+        self.mesh_name = mesh_name
 
         self.classifier = classifier
         #for p in self.classifier.parameters():
@@ -103,24 +106,29 @@ class FGSMAttack(pl.LightningModule):
 
         total_loss = torch.zeros(1, device=self.device)
         predictions = []
+        images = []
         # todo: see if operations can be batched
         for render_input, target in zip(render_inputs, targets):
             self.apply_input(*render_input)
             image = self.render()
+            images.append(image.cpu())
             class_tensor = self.classifier.classify(image)
             _, class_predicted = class_tensor.max(1, keepdim=True)
             class_predicted = class_predicted.squeeze(0)
-            predictions.append(class_predicted)
+            predictions.append(class_predicted.cpu())
             target = target.unsqueeze(0)
 
             current_loss = F.nll_loss(class_tensor, target, reduction="mean")
-
+            del class_tensor
+            del image
             # if prediction is already wrong skip attack for this input
             if class_predicted != target:
                 current_loss = current_loss * 0
 
             total_loss = total_loss + current_loss
 
+        images_grid = Viewer3D.make_grid(images)
+        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d", images_grid.permute((2,0,1)))
         # todo: when removing the for loop, remove also scaling factor below
         return total_loss / render_inputs.shape[0], torch.tensor(predictions, device=self.device), targets
 

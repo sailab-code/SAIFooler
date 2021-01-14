@@ -9,7 +9,7 @@ class Classifier(pl.LightningModule):
         pass
 
     def __init__(self, model, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
         self.model = model
         self.model.eval()

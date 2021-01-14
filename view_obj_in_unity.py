@@ -14,7 +14,7 @@ from sailenv.agent import Agent
 import matplotlib.pyplot as plt
 import cv2
 
-from saifooler.render.unity_render import UnityRender
+from saifooler.render.unity_evaluator import SailenvEvaluator
 from saifooler.viewers.viewer import Viewer3D
 
 use_cuda = False
@@ -66,8 +66,8 @@ if __name__ == '__main__':
                       category_frame_active=False, width=224, height=224, host=host, port=8085, use_gzip=False)
         agent.register()
         agent.change_main_camera_clear_flags(255, 255, 255)
-        unity_render = UnityRender(agent, "./meshes/table_living_room_attacked/table_living_room_attacked.zip")
-        unity_render.change_scene()
+        agent.change_scene("object_view/scene")
+        unity_render = SailenvEvaluator(agent, "./meshes/table_living_room_attacked/table_living_room_attacked.zip")
         unity_render.look_at_mesh(2., 10., 30.)
         unity_render.spawn_obj()
         main_img = unity_render.render()

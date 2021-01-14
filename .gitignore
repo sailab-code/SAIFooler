@@ -6,3 +6,5 @@ images/
 pytorch3d.bkp/
 cub-1.10.0.zip
 meshes/attacks/
+logs/
+meshes/**/*.zip
