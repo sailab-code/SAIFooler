@@ -6,6 +6,7 @@ from sailenv.agent import Agent
 from torchvision import models
 import sys
 import argparse
+import seaborn as sns
 
 from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.render.render_module import RenderModule
@@ -15,9 +16,6 @@ from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from saifooler.render.unity_evaluator import SailenvEvaluator
 
 from pytorch_lightning.loggers import TensorBoardLogger
-
-from saifooler.viewers.viewer import Viewer3D
-
 
 
 parser = argparse.ArgumentParser(description="Settings for FGSM Attack to obj textures")
@@ -137,6 +135,24 @@ if __name__ == '__main__':
         attack_accuracy = sailenv_attack_evaluator.evaluate(logger)
 
         print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")
+
+        fig = sns.barplot(
+            x=[
+                'pytorch_no_attack',
+                'pytorch_attack',
+                'sailenv_no_attack',
+                'sailenv_attack'
+            ],
+            y=[
+                attacker.accuracies['train_accuracy'].item(),
+                attacker.accuracies['test_accuracy'].item(),
+                noattack_accuracy.item(),
+                attack_accuracy.item()
+            ]
+        ).get_figure()
+
+        logger.experiment.add_figure(f"{mesh_name}/summary", fig)
+
         logger.experiment.flush()
 
     agent.delete()

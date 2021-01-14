@@ -156,13 +156,10 @@ class MeshDescriptor:
         with zipfile.ZipFile(zip_path, "w") as zip_obj:
             model_path = self.obj_path
             mat_def_path = self.mat_def_path
-            print("Zipping " + model_path + " as " + os.path.basename(model_path))
             zip_obj.write(model_path, compress_type=compression, arcname=os.path.basename(model_path))
-            print("Zipping " + mat_def_path + " as " + os.path.basename(mat_def_path))
             zip_obj.write(mat_def_path, compress_type=compression, arcname=os.path.basename(mat_def_path))
             if textures_paths is not None:
                 for texture_path in textures_paths:
-                    print("Zipping " + texture_path + " as " + os.path.basename(texture_path))
                     zip_obj.write(texture_path, compress_type=compression, arcname=os.path.basename(texture_path))
 
         return zip_path

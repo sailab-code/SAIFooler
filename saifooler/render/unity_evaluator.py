@@ -1,14 +1,9 @@
 from typing import Any
 
-from pytorch3d.renderer import look_at_rotation, camera_position_from_spherical_angles
+from pytorch3d.renderer import camera_position_from_spherical_angles
 from sailenv.agent import Agent
-import numpy as np
 import pytorch_lightning as pl
 import torch
-
-from PIL import Image
-from torchvision import transforms
-to_tensor = transforms.ToTensor()
 
 from saifooler.viewers.viewer import Viewer3D
 
@@ -34,7 +29,6 @@ class SailenvEvaluator(pl.LightningModule):
     def spawn_obj(self):
         remote_zip = self.agent.send_obj_zip(self.obj_zip)
         self.obj_id = self.agent.spawn_object(f"file:{remote_zip}")
-        print(f"Spawned object with id {self.obj_id}")
 
     def despawn_obj(self):
         self.agent.despawn_object(self.obj_id)
@@ -62,15 +56,10 @@ class SailenvEvaluator(pl.LightningModule):
         targets = []
         images = []
 
-
         for batch_render_inputs, batch_targets in self.data_module.test_dataloader():
             for render_input, target in zip(batch_render_inputs, batch_targets):
                 self.look_at_mesh(*render_input)
                 image = self.render()
-                #image_bkp = image.clone()
-                #image = Image.fromarray(image.numpy())
-                #image = to_tensor(image).permute(1, 2, 0)
-                # image = image.permute(1, 2, 0)
                 images.append(image)
                 image = image.to(self.classifier.device)
                 class_tensor = self.classifier.classify(image)
@@ -79,12 +68,6 @@ class SailenvEvaluator(pl.LightningModule):
                 del image
                 predictions.append(class_predicted.cpu())
                 targets.append(target.cpu())
-
-        """if "attack" not in self.mesh_name:
-            for idx, image in enumerate(images):
-                from PIL import Image
-                img = Image.fromarray(image.permute(2, 0, 1).numpy())
-                img.save(f"D:\\GitHub\\SAIFooler\\test\\{self.mesh_name.split('/')[0]}_{idx}.png")"""
 
         self.accuracy(torch.tensor(predictions), torch.tensor(targets))
         self.despawn_obj()

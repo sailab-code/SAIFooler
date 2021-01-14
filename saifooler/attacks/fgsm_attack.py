@@ -82,6 +82,8 @@ class FGSMAttack(pl.LightningModule):
         self.valid_accuracy = pl.metrics.Accuracy()
         self.test_accuracy = pl.metrics.Accuracy()
 
+        self.accuracies = {}
+
     def parameters(self, recurse: bool = True):
         return iter([self.texture])
 
@@ -139,6 +141,7 @@ class FGSMAttack(pl.LightningModule):
         correct = accuracy.correct.item()
         total = accuracy.total.item()
         acc = accuracy.compute()
+        self.accuracies[f"{phase}_accuracy"] = acc
         self.log(f"{phase}_accuracy", acc)
         self.print(f'{phase.capitalize()} accuracy: {correct}/{total} = {acc}')
 
