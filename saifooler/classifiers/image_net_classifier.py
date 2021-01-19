@@ -29,8 +29,13 @@ class ImageNetClassifier(Classifier):
         return self.class_dict[class_id]
 
     def normalize_image(self, image):
+        """
+
+        :param image: tensor of shape (N, W, H, C)
+        :return: image normalized for ImageNet and permuted in the shape (N, C, W, H) which is the shape
+         used by torchvision models
+        """
         image = (image - self.mean) / self.std
-        image = image.permute(2, 0, 1)
-        image = image.unsqueeze(0)
+        image = image.permute(0, 3, 1, 2)
         return image
 

@@ -23,7 +23,7 @@ class OrientationDataModule(pl.LightningDataModule):
         inputs[:, 0], inputs[:, 1], inputs[:, 2] = self.distance, self.elev, orientations
 
         targets = torch.full_like(orientations, self.target_class, dtype=torch.long)
-        self.inputs, self.targets = inputs, targets
+        self.inputs, self.targets = inputs, targets.unsqueeze(1)
 
     def train_dataloader(self):
         return DataLoader(TensorDataset(self.inputs, self.targets), batch_size=self.batch_size)

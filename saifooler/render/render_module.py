@@ -81,7 +81,12 @@ class RenderModule(pl.LightningModule):
     def render(self, mesh):
         if not isinstance(mesh, Meshes):
             raise ValueError("mesh must be of type Meshes")
-        return self.renderer(mesh)[0, ..., :3]
+
+        # replicate the mesh so it is as big as the camera inputs
+        N = self.cameras.R.shape[0]
+        mesh_ext = mesh.extend(N)
+
+        return self.renderer(mesh_ext)[..., :3]
 
     def forward(self, mesh):
         return self.render(mesh)

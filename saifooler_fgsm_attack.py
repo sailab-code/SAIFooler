@@ -40,6 +40,8 @@ parser.add_argument('--host', metavar='host', type=str,
                     default="127.0.0.1", help="Host on which SAILenv server resides")
 parser.add_argument('--port', metavar='port', type=int,
                     default=8085, help="Port on which SAILenv server resides")
+parser.add_argument('--unitytest', metavar='unity', type=bool,
+                    default=False, help="Wheter to test on unity." )
 
 
 def view_model(_viewer, _views_module):
@@ -75,21 +77,21 @@ if __name__ == '__main__':
     logger = TensorBoardLogger("./logs")
 
     # register agent for SAILenv
-    host = args.host
-    port = args.port
-    agent = Agent(depth_frame_active=False,
-                  flow_frame_active=False,
-                  object_frame_active=False,
-                  main_frame_active=True,
-                  category_frame_active=False,
-                  width=224, height=224, host=host,
-                  port=port, use_gzip=False)
-    # put white background on unity scene
-    agent.register()
-    agent.change_main_camera_clear_flags(255, 255, 255)
-    agent.change_scene("object_view/scene")
-
-    logger.experiment.add_hparams({"eps": epsilon},{})
+    test_on_unity = args.unitytest
+    if test_on_unity:
+        host = args.host
+        port = args.port
+        agent = Agent(depth_frame_active=False,
+                      flow_frame_active=False,
+                      object_frame_active=False,
+                      main_frame_active=True,
+                      category_frame_active=False,
+                      width=224, height=224, host=host,
+                      port=port, use_gzip=False)
+        # put white background on unity scene
+        agent.register()
+        agent.change_main_camera_clear_flags(255, 255, 255)
+        agent.change_scene("object_view/scene")
 
     for mesh_name, mesh_def in meshes_def.items():
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
@@ -122,21 +124,25 @@ if __name__ == '__main__':
         for mat_name, new_tex in attacker.get_textures().items():
             attacked_mesh_descriptor.replace_texture(mat_name, "albedo", torch.flipud(new_tex))
 
-        # save the attacked mesh as a zip file
-        attacked_zip_path = attacked_mesh_descriptor.save_to_zip()
+        if test_on_unity:
+            # save the attacked mesh as a zip file
+            attacked_zip_path = attacked_mesh_descriptor.save_to_zip()
 
-        # save the original mesh as a zip file
-        original_zip_path = mesh_descriptor.save_to_zip()
+            # save the original mesh as a zip file
+            original_zip_path = mesh_descriptor.save_to_zip()
 
-        # prepare rendering on SAILenv
-        sailenv_noattack_evaluator = SailenvEvaluator(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier)
-        noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger)
-        print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
+            # prepare rendering on SAILenv
+            sailenv_noattack_evaluator = SailenvEvaluator(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier)
+            noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger).item()
+            print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
 
-        sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier)
-        attack_accuracy = sailenv_attack_evaluator.evaluate(logger)
+            sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier)
+            attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
 
-        print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")
+            print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")
+        else:
+            noattack_accuracy = 0.
+            attack_accuracy = 0.
 
         fig = sns.barplot(
             x=[
@@ -148,8 +154,8 @@ if __name__ == '__main__':
             y=[
                 attacker.accuracies['train_accuracy'].item(),
                 attacker.accuracies['test_accuracy'].item(),
-                noattack_accuracy.item(),
-                attack_accuracy.item()
+                noattack_accuracy,
+                attack_accuracy
             ]
         ).get_figure()
 
