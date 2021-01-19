@@ -45,7 +45,7 @@ class FGSMOptimizer(torch.optim.Optimizer):
                     continue
 
                 grad_sign = param.grad.sign()
-                perturbation = grad_sign * eps
+                perturbation = grad_sign.cuda() * eps
                 param.data.add_(perturbation).clamp_(0., 1.)
 
         return loss
@@ -107,7 +107,7 @@ class FGSMAttack(pl.LightningModule):
     def handle_batch(self, batch):
         render_inputs, targets = batch
 
-        """# apply batch of inputs and render
+        # apply batch of inputs and render
         self.apply_input(render_inputs[:, 0], render_inputs[:, 1], render_inputs[:, 2])
         images = self.render()
 
@@ -125,35 +125,7 @@ class FGSMAttack(pl.LightningModule):
         images_grid = Viewer3D.make_grid(images)
         self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d", images_grid.permute((2,0,1)))
 
-        return loss, classes_predicted, targets"""
-
-        images = []
-        predictions = []
-
-        total_loss = torch.tensor(0., device=self.device)
-
-        # todo: see if operations can be batched
-        for render_input, target in zip(render_inputs, targets):
-            self.apply_input(*render_input)
-            image = self.render()
-            images.append(image.cpu())
-            class_tensor = self.classifier.classify(image)
-            _, class_predicted = class_tensor.max(1, keepdim=True)
-            class_predicted = class_predicted.squeeze(0)
-            predictions.append(class_predicted.cpu())
-            # target = target.unsqueeze(0)
-
-            current_loss = F.nll_loss(class_tensor, target, reduction="mean")
-            del class_tensor
-            del image
-            # if prediction is already wrong skip attack for this input
-            if class_predicted != target:
-                current_loss = current_loss * 0
-
-            total_loss = total_loss + current_loss
-
-        # todo: when removing the for loop, remove also scaling factor below
-        return total_loss / render_inputs.shape[0], torch.tensor(predictions, device=self.device), targets.squeeze(1)
+        return loss, classes_predicted, targets
 
     def configure_optimizers(self):
         return FGSMOptimizer(self.parameters(), self.epsilon)
