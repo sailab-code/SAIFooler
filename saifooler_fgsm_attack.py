@@ -115,6 +115,8 @@ if __name__ == '__main__':
         trainer.test(attacker, datamodule=data_module)
         print("Attack end")
 
+        attacker.to('cpu')
+        torch.cuda.empty_cache()
         attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"./meshes/attacks/{mesh_name}_attacked", overwrite=True)
 
         for mat_name, new_tex in attacker.get_textures().items():
