@@ -37,7 +37,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         )
         self.register_parameter("delta", self.delta)
 
-        # call update textures to set the parameter as texture
+        # call update_textures to set the parameter as texture
         # or else it will not use it at first epoch
         self.update_textures()
 
@@ -82,8 +82,12 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         total = accuracy.total.item()
         acc = accuracy.compute()
         self.accuracies[f"{phase}_accuracy"] = acc
-        self.log(f"{phase}_accuracy", acc)
+        self.log(f"{self.mesh_name}/{phase}_accuracy", acc)
         self.print(f'{phase.capitalize()} accuracy: {correct}/{total} = {acc}')
+
+        if self.current_epoch == 0:
+            # save the accuracy before attack
+            self.accuracies["before_attack"] = acc
 
     def on_train_epoch_start(self):
         self.train_accuracy.reset()
@@ -95,6 +99,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
     def on_train_batch_end(self, outputs, batch, batch_idx, dataloader_idx):
         self.update_textures()
+        for tex_name, tex in self.get_textures().items():
+            self.logger.experiment.add_image(f"{self.mesh_name}/textures/{tex_name}", tex.permute(2, 0, 1),
+                                             global_step=self.current_epoch)
 
     def on_train_epoch_end(self, outputs):
         self.__log_accuracy(self.train_accuracy, "train")

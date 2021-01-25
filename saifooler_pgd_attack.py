@@ -80,7 +80,7 @@ if __name__ == '__main__':
     classifier = ImageNetClassifier(used_model)
     render_module = RenderModule()
 
-    logger = TensorBoardLogger("./logs")
+    logger = TensorBoardLogger("./logs/pgd")
 
     # register agent for SAILenv
     test_on_unity = args.unitytest
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=40,
+            max_epochs=1,
             weights_summary=None,
             progress_bar_refresh_rate=0,
             gpus=1,
@@ -163,7 +163,7 @@ if __name__ == '__main__':
                 'sailenv_attack'
             ],
             y=[
-                attacker.accuracies['train_accuracy'].item(),
+                attacker.accuracies['before_attack'].item(),
                 attacker.accuracies['test_accuracy'].item(),
                 noattack_accuracy,
                 attack_accuracy
