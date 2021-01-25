@@ -84,9 +84,14 @@ class RenderModule(pl.LightningModule):
 
         # replicate the mesh so it is as big as the camera inputs
         N = self.cameras.R.shape[0]
-        mesh_ext = mesh.extend(N)
-        mesh_ext.to(self.device)
-        mesh_ext.textures.to(self.device)
+
+        if N > 1:
+            mesh_ext = mesh.extend(N)
+            mesh_ext.to(self.device)
+            mesh_ext.textures.to(self.device)
+        else:
+            mesh_ext = mesh
+
         return self.renderer(mesh_ext)[..., :3]
 
     def forward(self, mesh):
