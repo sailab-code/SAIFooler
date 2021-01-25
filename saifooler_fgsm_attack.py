@@ -98,7 +98,7 @@ if __name__ == '__main__':
         elevation, distance = mesh_def["elevation"], mesh_def["distance"]
         mesh_descriptor = MeshDescriptor(mesh_path)
 
-        data_module = OrientationDataModule(target_class, elevation, distance, 30)
+        data_module = OrientationDataModule(target_class, elevation, distance, 30, batch_size=5)
         attacker = FGSMAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, mesh_name=mesh_name)
         attacker.to(device)
 
@@ -111,14 +111,15 @@ if __name__ == '__main__':
             logger=logger
         )
 
-        print("Attack begin")
+        print(f"Attack begin against {mesh_name}")
         trainer.fit(attacker, datamodule=data_module)
         print("Testing")
         trainer.test(attacker, datamodule=data_module)
-        print("Attack end")
+        print(f"Attack end on {mesh_name}")
 
         attacker.to('cpu')
         torch.cuda.empty_cache()
+
         attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"./meshes/attacks/{mesh_name}_attacked", overwrite=True)
 
         for mat_name, new_tex in attacker.get_textures().items():
@@ -163,4 +164,5 @@ if __name__ == '__main__':
 
         logger.experiment.flush()
 
-    agent.delete()
+    if test_on_unity:
+        agent.delete()
