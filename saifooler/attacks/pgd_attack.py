@@ -57,12 +57,13 @@ class PGDOptimizer(torch.optim.Optimizer):
 
                 p_grad = param.grad
                 p_data = param.data.clone()
-                p_data += alpha * p_grad / self._norms(p_grad)
+                # p_data += alpha * p_grad / self._norms(p_grad)
+                p_data += alpha * p_grad.sign()
 
                 # clip src_tex + param between [0,1]
                 p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
 
-                p_data *= eps / self._norms(p_data).clamp_(min=eps)
+                p_data *= eps / self._norms(p_data).clamp(min=eps)
 
                 param.data = p_data
 
