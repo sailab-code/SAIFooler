@@ -45,11 +45,8 @@ class RenderModule(pl.LightningModule):
         raster_settings = RasterizationSettings(**raster_settings_dict)
 
         lights_settings = {
-            'type': 'directional',
-            'ambient_color': ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5), ),
-            'diffuse_color': ((0.3, 0.3, 0.3), (0.3, 0.3, 0.3), ),
-            'specular_color': ((0.2, 0.2, 0.2), (0.2, 0.2, 0.2), ),
-            'direction': ((0.0, 1.0, 0.0), (0.0, -1.0, 0.0), ),
+            'type': 'point',
+            'location': [[0.5, 5.0, 0.0]],
             ** render_settings.get('lights', {})
         }
         lights_type = lights_settings['type']
