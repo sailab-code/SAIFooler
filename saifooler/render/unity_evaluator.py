@@ -51,26 +51,19 @@ class SailenvEvaluator(pl.LightningModule):
 
     def evaluate(self, logger=None):
         self.spawn_obj()
-
-        predictions = []
-        targets = []
         images = []
 
         for batch_render_inputs, batch_targets in self.data_module.test_dataloader():
             for render_input, target in zip(batch_render_inputs, batch_targets):
                 self.look_at_mesh(*render_input)
                 image = self.render()
-                images.append(image)
-                image = image.to(self.classifier.device)
-                class_tensor = self.classifier.classify(image)
-                _, class_predicted = class_tensor.max(1, keepdim=True)
-                del class_tensor
-                del image
-                predictions.append(class_predicted.cpu())
-                targets.append(target.cpu())
+                images.append(image.unsqueeze(0).to(self.classifier.device))
 
-        self.accuracy(torch.tensor(predictions), torch.tensor(targets))
-        self.despawn_obj()
+            images = torch.cat(images)
+            class_tensor = self.classifier.classify(images)
+            _, classes_predicted = class_tensor.max(1, keepdim=True)
+            self.accuracy(classes_predicted, batch_targets)
+            self.despawn_obj()
 
         if logger is not None:
             images_grid = Viewer3D.make_grid(images)
