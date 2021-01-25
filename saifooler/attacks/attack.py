@@ -5,6 +5,10 @@ import torch
 import pytorch_lightning as pl
 from pytorch3d.structures import Meshes
 import pytorch3d.io as py3dio
+from torch.nn import CrossEntropyLoss
+
+from saifooler.viewers.viewer import Viewer3D
+
 
 class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def _forward_unimplemented(self, *input: Any) -> None:
@@ -24,14 +28,15 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.mini_batch_size = mini_batch_size
 
         self.classifier = classifier
-        #for p in self.classifier.parameters():
-        #    p.requires_grad_(False)
         self.epsilon = epsilon
 
-        self.texture = torch.nn.Parameter(
-            self.mesh.textures.maps_padded()
+        self.src_texture = self.mesh.textures.maps_padded()
+
+        self.delta = torch.nn.Parameter(
+            torch.zeros_like(self.src_texture)
         )
-        self.register_parameter("texture", self.texture)
+        self.register_parameter("delta", self.delta)
+
         # call update textures to set the parameter as texture
         # or else it will not use it at first epoch
         self.update_textures()
@@ -43,10 +48,11 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.accuracies = {}
 
     def parameters(self, recurse: bool = True):
-        return iter([self.texture])
+        return iter([self.delta])
 
     def update_textures(self):
-        self.mesh.textures.set_maps(self.texture)
+        new_maps = self.src_texture + self.delta
+        self.mesh.textures.set_maps(new_maps.clamp_(0., 1.))
 
     def apply_input(self, distance, elevation, azimuth):
         self.render_module.look_at_mesh(distance, elevation, azimuth)
@@ -118,6 +124,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def to(self, device):
         self.mesh = self.mesh.to(device)
         self.mesh.textures = self.mesh.textures.to(device)
+        self.src_texture = self.src_texture.to(device)
         self.render_module.to(device)
         self.classifier.to(device)
         super().to(device)
@@ -150,9 +157,26 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         return total_loss, predictions, targets
 
-    @abc.abstractmethod
     def handle_mini_batch(self, mini_batch, mini_batch_idx):
-        pass
+        render_inputs, targets = mini_batch
+
+        images = self.render_batch(render_inputs)
+
+        # classify images and extract class predictions
+        class_tensors = self.classifier.classify(images)
+        _, classes_predicted = class_tensors.max(1, keepdim=True)
+
+        # mask images on which the prediction was wrong
+        loss_targets = targets.clone()
+        loss_targets[classes_predicted != targets] = -1
+        loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=-1)
+
+        # compute CrossEntropyLoss
+        loss = loss_fn(class_tensors, loss_targets.squeeze(1))
+        images_grid = Viewer3D.make_grid(images)
+        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}", images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
+
+        return loss, classes_predicted
 
     @abc.abstractmethod
     def configure_optimizers(self):

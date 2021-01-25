@@ -10,7 +10,7 @@ import seaborn as sns
 
 from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.render.render_module import RenderModule
-from saifooler.attacks.fgsm_attack import FGSMAttack
+from saifooler.attacks.pgd_attack import PGDAttack
 from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from saifooler.render.unity_evaluator import SailenvEvaluator
@@ -19,7 +19,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 from saifooler.viewers.viewer import Viewer3D
 
-parser = argparse.ArgumentParser(description="Settings for FGSM Attack to obj textures")
+parser = argparse.ArgumentParser(description="Settings for PGD Attack to obj textures")
 parser.add_argument('--meshes_definition', metavar='meshes_definition', type=str,
                     required=True,
                     help="Path to a json file which defines the meshes to be attacked. "
@@ -29,8 +29,11 @@ parser.add_argument('--meshes_definition', metavar='meshes_definition', type=str
                     )
 parser.add_argument('--eps', metavar="epsilon", type=float,
                     required=True,
-                    help="Epsilon of the FGSM attack")
-parser.add_argument('--classifier', metavar="classivier", type=str,
+                    help="Epsilon of the PGD attack")
+parser.add_argument('--alpha', metavar="alpha", type=float,
+                    required=True,
+                    help="Alpha of the PGD attack")
+parser.add_argument('--classifier', metavar="classifier", type=str,
                     required=True,
                     help="The classifier to be attacked. Choose between inception and mobilenet.")
 parser.add_argument('--cuda', metavar="cuda", type=bool,
@@ -67,6 +70,8 @@ if __name__ == '__main__':
         sys.exit("Wrong model!")
 
     epsilon = args.eps
+    alpha = args.alpha
+
     meshes_json_path = args.meshes_definition
 
     with open(meshes_json_path) as meshes_file:
@@ -100,12 +105,12 @@ if __name__ == '__main__':
         mesh_descriptor = MeshDescriptor(mesh_path)
 
         data_module = OrientationDataModule(target_class, elevation, distance, 30)
-        attacker = FGSMAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, mesh_name=mesh_name)
+        attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha, mesh_name=mesh_name)
         attacker.to(device)
 
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=1,
+            max_epochs=40,
             weights_summary=None,
             progress_bar_refresh_rate=0,
             gpus=1,
