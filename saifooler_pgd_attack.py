@@ -8,6 +8,7 @@ import sys
 import argparse
 import seaborn as sns
 
+from saifooler.data_modules.multiple_viewpoints_module import MultipleViewModule
 from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.render.render_module import RenderModule
 from saifooler.attacks.pgd_attack import PGDAttack
@@ -103,16 +104,21 @@ if __name__ == '__main__':
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
         elevation, distance = mesh_def["elevation"], mesh_def["distance"]
         mesh_descriptor = MeshDescriptor(mesh_path)
-
-        data_module = OrientationDataModule(target_class, elevation, distance, 30)
+        data_module = MultipleViewModule(
+            target_class, distance,
+            orientation_elev_steps=5,
+            orientation_azim_steps=6,
+            light_azim_steps=4,
+            light_elev_steps=4,
+            batch_size=30)
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha, mesh_name=mesh_name)
         attacker.to(device)
 
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=1,
+            max_epochs=2,
             weights_summary=None,
-            progress_bar_refresh_rate=0,
+            # progress_bar_refresh_rate=0,
             gpus=1,
             logger=logger
         )
@@ -128,7 +134,6 @@ if __name__ == '__main__':
         trainer.logger.experiment.add_image(f"{mesh_name}/pytorch3d_attacked", post_attack_grid.permute((2, 0, 1)))
 
         attacker.to('cpu')
-        torch.cuda.empty_cache()
 
         attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"./meshes/attacks/{mesh_name}_attacked", overwrite=True)
 
@@ -143,11 +148,11 @@ if __name__ == '__main__':
             original_zip_path = mesh_descriptor.save_to_zip()
 
             # prepare rendering on SAILenv
-            sailenv_noattack_evaluator = SailenvEvaluator(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier)
+            sailenv_noattack_evaluator = SailenvEvaluator(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier, render_module)
             noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger).item()
             print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
 
-            sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier)
+            sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier, render_module)
             attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
 
             print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")
@@ -173,6 +178,12 @@ if __name__ == '__main__':
         logger.experiment.add_figure(f"{mesh_name}/summary", fig)
 
         logger.experiment.flush()
+
+        del attacker
+        del trainer
+        del data_module
+
+        torch.cuda.empty_cache()
 
     if test_on_unity:
         agent.delete()

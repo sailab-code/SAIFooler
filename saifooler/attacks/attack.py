@@ -54,8 +54,19 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         new_maps = self.src_texture + self.delta
         self.mesh.textures.set_maps(new_maps.clamp_(0., 1.))
 
-    def apply_input(self, distance, elevation, azimuth):
-        self.render_module.look_at_mesh(distance, elevation, azimuth)
+    def apply_input(self, render_input):
+        """
+
+        :param render_input: 1x5 tensor in the form (distance, camera_azim, camera_elev, lights_azim, lights_elev)
+        :return: None
+        """
+
+        distance, camera_azim, camera_elev = render_input[:3]
+        self.render_module.look_at_mesh(distance, camera_azim, camera_elev)
+
+        lights_azim, lights_elev = render_input[3:]
+        self.render_module.set_lights_direction(lights_azim, lights_elev)
+
 
     def render(self):
         return self.render_module.render(self.mesh)
@@ -71,7 +82,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         # we must render each image separately, batch rendering is broken for some reason
         images = []
         for render_input in render_inputs:
-            self.apply_input(*render_input)
+            self.apply_input(render_input)
             image = self.render()
             images.append(image)
 
@@ -82,7 +93,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         total = accuracy.total.item()
         acc = accuracy.compute()
         self.accuracies[f"{phase}_accuracy"] = acc
-        self.log(f"{self.mesh_name}/{phase}_accuracy", acc)
+        self.log(f"{self.mesh_name}/{phase}_accuracy", acc, prog_bar=True)
         self.print(f'{phase.capitalize()} accuracy: {correct}/{total} = {acc}')
 
         if self.current_epoch == 0:
@@ -154,7 +165,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
             mini_batch_inputs = render_inputs[mini_batch_slice]
             mini_batch_targets = targets[mini_batch_slice]
             mini_batch_idx = int(i / self.mini_batch_size)
-            mini_batch_output = self.handle_mini_batch((mini_batch_inputs, mini_batch_targets), mini_batch_idx)
+            mini_batch_output = self.handle_mini_batch((mini_batch_inputs, mini_batch_targets), mini_batch_idx, batch_idx)
             loss, predictions = mini_batch_output
             batch_losses.append(loss)
             batch_predictions.append(predictions)
@@ -164,7 +175,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         return total_loss, predictions, targets
 
-    def handle_mini_batch(self, mini_batch, mini_batch_idx):
+    def handle_mini_batch(self, mini_batch, mini_batch_idx, batch_idx):
         render_inputs, targets = mini_batch
 
         images = self.render_batch(render_inputs)
@@ -181,7 +192,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         # compute CrossEntropyLoss
         loss = loss_fn(class_tensors, loss_targets.squeeze(1))
         images_grid = Viewer3D.make_grid(images)
-        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}", images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
+        global_step = (self.current_epoch * self.trainer.num_training_batches + batch_idx * self.mini_batch_size + mini_batch_idx)
+        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}", images_grid.permute((2, 0, 1)), global_step=global_step)
 
         return loss, classes_predicted
 

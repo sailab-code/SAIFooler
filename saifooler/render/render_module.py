@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import pytorch_lightning as pl
 from pytorch3d.renderer import look_at_view_transform, FoVPerspectiveCameras, PointLights, DirectionalLights, \
-    RasterizationSettings, MeshRenderer, MeshRasterizer, SoftPhongShader
+    RasterizationSettings, MeshRenderer, MeshRasterizer, SoftPhongShader, camera_position_from_spherical_angles
 from pytorch3d.structures import Meshes
 from pytorch_lightning.utilities.device_dtype_mixin import DeviceDtypeModuleMixin
 
@@ -44,21 +44,28 @@ class RenderModule(pl.LightningModule):
 
         raster_settings = RasterizationSettings(**raster_settings_dict)
 
-        lights_settings = {
-            'type': 'point',
-            'location': [[0.5, 5.0, 0.0]],
-            ** render_settings.get('lights', {})
-        }
-        lights_type = lights_settings['type']
+        lights_settings = render_settings.get('lights', {})
+        lights_type = lights_settings.get("type", "directional")
+
         if lights_type == 'point':
+            lights_settings = {
+                "type": "point",
+                "location": [[0.5, 5.0, 0.0]],
+                **lights_settings
+            }
             clz = PointLights
         elif lights_type == 'directional':
+            lights_settings = {
+                "type": "directional",
+                "direction": [[0., 1., 0.]],
+                **lights_settings
+            }
             clz = DirectionalLights
         else:
             raise ValueError("lights.type can be only 'point' or 'directional'")
 
         del lights_settings['type']
-        lights = clz(**lights_settings, device=self.device)
+        self.lights = clz(**lights_settings, device=self.device)
 
         self.renderer = MeshRenderer(
             rasterizer=MeshRasterizer(
@@ -67,7 +74,7 @@ class RenderModule(pl.LightningModule):
             ),
             shader=SoftPhongShader(
                 cameras=self.cameras,
-                lights=lights,
+                lights=self.lights,
                 device=self.device
             )
         )
@@ -75,8 +82,17 @@ class RenderModule(pl.LightningModule):
     def update_camera(self, r, t):
         self.cameras.R, self.cameras.T = r.to(self.device), t.to(self.device)
 
-    def look_at_mesh(self, distance, elevation, azimuth):
+    def look_at_mesh(self, distance, azimuth, elevation):
         self.update_camera(*look_at_view_transform(distance, elevation, azimuth))
+
+    def set_lights_direction(self, azimuth, elevation):
+        if isinstance(self.lights, DirectionalLights):
+            # to compute the direction, we can use pytorch3d camera_position_from_spherical_angles.
+            # It will return a point in the unit sphere that represent the opposite of our direction
+            # distance is fixed at 1 so we get a unit vector
+
+            direction = -camera_position_from_spherical_angles(1., elevation, azimuth)
+            self.lights.direction = direction
 
     def render(self, mesh):
         if not isinstance(mesh, Meshes):

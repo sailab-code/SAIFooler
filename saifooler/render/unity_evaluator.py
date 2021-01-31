@@ -1,6 +1,6 @@
 from typing import Any
 
-from pytorch3d.renderer import camera_position_from_spherical_angles
+from pytorch3d.renderer import camera_position_from_spherical_angles, DirectionalLights
 from sailenv.agent import Agent
 import pytorch_lightning as pl
 import torch
@@ -16,6 +16,7 @@ class SailenvEvaluator(pl.LightningModule):
                  mesh_name: str,
                  data_module: pl.LightningDataModule,
                  classifier,
+                 render_module,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.agent = agent
@@ -26,6 +27,16 @@ class SailenvEvaluator(pl.LightningModule):
         self.classifier = classifier
         self.mesh_name = mesh_name
 
+        self.p3d_lights: DirectionalLights = render_module.lights
+        self.set_unity_lights()
+
+    def set_unity_lights(self):
+        main_r, main_g, main_b = self.p3d_lights.diffuse_color
+        rim_r, rim_g, rim_b = self.p3d_lights.ambient_color
+
+        self.agent.set_light_color("Main Light", main_r, main_g, main_b)
+        self.agent.set_light_color("Rim Light", rim_r, rim_g, rim_b)
+
     def spawn_obj(self):
         remote_zip = self.agent.send_obj_zip(self.obj_zip)
         self.obj_id = self.agent.spawn_object(f"file:{remote_zip}")
@@ -33,12 +44,21 @@ class SailenvEvaluator(pl.LightningModule):
     def despawn_obj(self):
         self.agent.despawn_object(self.obj_id)
 
-    def look_at_mesh(self, distance, elevation, azimuth):
+    def look_at_mesh(self, distance, azimuth, elevation):
         position = camera_position_from_spherical_angles(distance, elevation, azimuth)
         rotation = (180-elevation, azimuth, 180)
 
         self.agent.set_position(list(position.squeeze()))
         self.agent.set_rotation(rotation)
+
+    def set_lights_direction(self, azimuth, elevation):
+        # to compute the direction, we can use pytorch3d camera_position_from_spherical_angles.
+        # It will return a point in the unit sphere that represent the opposite of our direction
+        # distance is fixed at 1 so we get a unit vector
+
+        direction = -camera_position_from_spherical_angles(1., elevation, azimuth)
+        direction = direction.detach().cpu().numpy().tolist()
+        self.agent.set_light_direction(self.light_name, direction)
 
     def render(self):
         frame = torch.tensor(self.agent.get_frame()["main"])
