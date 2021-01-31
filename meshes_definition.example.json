@@ -1,20 +1,67 @@
 {
+    "alarm_clock": {
+        "path": "./meshes/alarm_clock",
+        "distance": 0.2,
+        "target_class": 530
+    },
+    "bathtub": {
+        "path": "./meshes/bathtub",
+        "distance": 2.5,
+        "target_class": 435
+    },
+    "candle": {
+        "path": "./meshes/candle",
+        "distance": 0.2,
+        "target_class": 470
+    },
+    "cellphone": {
+        "path": "./meshes/cellphone",
+        "distance": 0.15,
+        "target_class": 487
+    },
+    "lamp_floor": {
+        "path": "./meshes/lamp_floor",
+        "distance": 1.25,
+        "target_class": 619
+    },
+    "pillow": {
+        "path": "./meshes/pillow",
+        "distance": 0.75,
+        "target_class": 721
+    },
     "remote_controller": {
         "path": "./meshes/remote_controller",
         "distance": 0.25,
-        "target_class": 761,
-        "elevation": 45
+        "target_class": 761
     },
     "table_living_room": {
         "path": "./meshes/table_living_room",
         "distance": 2.0,
-        "target_class": 532,
-        "elevation": 10
+        "target_class": 532
+    },
+    "tennis_racket": {
+        "path": "./meshes/tennis_racket",
+        "distance": 0.6,
+        "target_class": 752
     },
     "toilet": {
         "path": "./meshes/toilet",
         "distance": 1.2,
-        "target_class": 861,
-        "elevation": 10
+        "target_class": 861
+    },
+    "toilet_paper": {
+        "path": "./meshes/toilet_paper",
+        "distance": 0.2,
+        "target_class": 999
+    },
+    "towel": {
+        "path": "./meshes/towel",
+        "distance": 0.65,
+        "target_class": 434
+    },
+    "tv_wall": {
+        "path": "./meshes/tv_wall",
+        "distance": 1.05,
+        "target_class": 598
     }
 }
