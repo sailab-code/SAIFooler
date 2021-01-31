@@ -78,9 +78,6 @@ if __name__ == '__main__':
     with open(meshes_json_path) as meshes_file:
         meshes_def = json.load(meshes_file)
 
-    classifier = ImageNetClassifier(used_model)
-    render_module = RenderModule()
-
     logger = TensorBoardLogger("./logs/pgd")
 
     # register agent for SAILenv
@@ -104,6 +101,8 @@ if __name__ == '__main__':
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
         elevation, distance = mesh_def["elevation"], mesh_def["distance"]
         mesh_descriptor = MeshDescriptor(mesh_path)
+        classifier = ImageNetClassifier(used_model)
+        render_module = RenderModule()
         data_module = MultipleViewModule(
             target_class, distance,
             orientation_elev_steps=5,
@@ -116,7 +115,7 @@ if __name__ == '__main__':
 
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=2,
+            max_epochs=1,
             weights_summary=None,
             # progress_bar_refresh_rate=0,
             gpus=1,
@@ -129,11 +128,11 @@ if __name__ == '__main__':
         trainer.test(attacker, datamodule=data_module)
         print(f"Attack end on {mesh_name}")
 
-        images = attacker.render_batch(data_module.inputs)
-        post_attack_grid = Viewer3D.make_grid(images)
-        trainer.logger.experiment.add_image(f"{mesh_name}/pytorch3d_attacked", post_attack_grid.permute((2, 0, 1)))
-
         attacker.to('cpu')
+        #images = attacker.render_batch(data_module.inputs)
+        #post_attack_grid = Viewer3D.make_grid(images)
+        #trainer.logger.experiment.add_image(f"{mesh_name}/pytorch3d_attacked", post_attack_grid.permute((2, 0, 1)))
+
 
         attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"./meshes/attacks/{mesh_name}_attacked", overwrite=True)
 
@@ -154,6 +153,9 @@ if __name__ == '__main__':
 
             sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier, render_module)
             attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
+
+            del sailenv_attack_evaluator
+            del sailenv_noattack_evaluator
 
             print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")
         else:
@@ -182,6 +184,12 @@ if __name__ == '__main__':
         del attacker
         del trainer
         del data_module
+        del render_module
+        del classifier
+        #del images
+        #del post_attack_grid
+        del mesh_descriptor
+        del attacked_mesh_descriptor
 
         torch.cuda.empty_cache()
 
