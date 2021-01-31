@@ -1,0 +1,86 @@
+# Blender MTL File: 'workspace.blend'
+# Material Count: 7
+
+newmtl bathtub_01
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump bathtub_01_Normal.png
+map_Kd bathtub_01_AlbedoTransparency.png
+
+newmtl bathtub_01_bar
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump bathtub_01_bar_Normal.png
+map_Kd bathtub_01_bar_AlbedoTransparency.png
+
+newmtl bathtub_01_bar_curtain
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump bathtub_01_bar_curtain_Normal.png
+map_Kd bathtub_01_bar_curtain_AlbedoTransparency.png
+
+newmtl bathtub_01_drain_bottom
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump bathtub_01_drain_bottom_Normal.png
+map_Kd bathtub_01_drain_bottom_AlbedoTransparency.png
+
+newmtl bathtub_01_drain_top
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump bathtub_01_drain_top_Normal.png
+map_Kd bathtub_01_drain_top_AlbedoTransparency.png
+
+newmtl bathtub_01_regulator
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump bathtub_01_regulator_Normal.png
+map_Kd bathtub_01_regulator_AlbedoTransparency.png
+
+newmtl bathtub_01_tap
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump bathtub_01_tap_Normal.png
+map_Kd bathtub_01_tap_AlbedoTransparency.png

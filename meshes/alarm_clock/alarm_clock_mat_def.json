@@ -1,0 +1,7 @@
+{
+  "alarm_clock_01": {
+    "albedo": "alarm_clock_01_AlbedoTransparency.png",
+    "normal": "alarm_clock_01_Normal.png",
+    "metallic": "alarm_clock_01_MetallicSmoothness.png"
+  }
+}

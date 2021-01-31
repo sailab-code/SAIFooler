@@ -1,0 +1,12 @@
+{
+  "toilet_paper_01": {
+    "albedo": "toilet_paper_01_AlbedoTransparency.png",
+    "normal": "toilet_paper_01_Normal.png",
+    "metallic": "toilet_paper_01_MetallicSmoothness.png"
+  },
+  "toilet_paper_01_roll": {
+    "albedo": "toilet_paper_01_roll_AlbedoTransparency.png",
+    "normal": "toilet_paper_01_roll_Normal.png",
+    "metallic": "toilet_paper_01_roll_MetallicSmoothness.png"
+  }
+}

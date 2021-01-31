@@ -1,0 +1,12 @@
+{
+  "tv_01_mat": {
+    "albedo": "tv_wall_01_AlbedoTransparency.png",
+    "normal": "tv_wall_01_Normal.png",
+    "metallic": "tv_wall_01_MetallicSmoothness.png"
+  },
+  "tv_wall_01_screen": {
+    "albedo": "tv_wall_01_screen_AlbedoTransparency.png",
+    "normal": "tv_wall_01_screen_Normal.png",
+    "metallic": "tv_wall_01_screen_MetallicSmoothness.png"
+  }
+}

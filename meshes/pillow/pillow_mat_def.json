@@ -1,0 +1,7 @@
+{
+  "pillow_01": {
+    "albedo": "pillow_01_AlbedoTransparency.png",
+    "normal": "pillow_01_Normal.png",
+    "metallic": "pillow_01_MetallicSmoothness.png"
+  }
+}

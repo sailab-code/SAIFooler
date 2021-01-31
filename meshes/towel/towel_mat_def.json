@@ -1,0 +1,12 @@
+{
+  "towel_01": {
+    "albedo": "towel_01_AlbedoTransparency.png",
+    "normal": "towel_01_Normal.png",
+    "metallic": "towel_01_MetallicSmoothness.png"
+  },
+  "towel_01_wall": {
+    "albedo": "towel_01_handle_AlbedoTransparency.png",
+    "normal": "towel_01_handle_Normal.png",
+    "metallic": "towel_01_handle_MetallicSmoothness.png"
+  }
+}

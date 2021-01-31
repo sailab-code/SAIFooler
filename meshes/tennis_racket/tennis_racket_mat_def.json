@@ -1,0 +1,7 @@
+{
+  "tennis_racket_01": {
+    "albedo": "tennis_racket_01_AlbedoTransparency.png",
+    "normal": "tennis_racket_01_Normal.png",
+    "metallic": "tennis_racket_01_MetallicSmoothness.png"
+  }
+}

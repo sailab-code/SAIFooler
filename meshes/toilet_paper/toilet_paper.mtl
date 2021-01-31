@@ -1,0 +1,26 @@
+# Blender MTL File: 'workspace.blend'
+# Material Count: 2
+
+newmtl toilet_paper_01
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump toilet_paper_01_Normal.png
+map_Kd toilet_paper_01_AlbedoTransparency.png
+
+newmtl toilet_paper_01_roll
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.233819 0.097278
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump toilet_paper_01_roll_Normal.png
+map_Kd toilet_paper_01_roll_AlbedoTransparency.png

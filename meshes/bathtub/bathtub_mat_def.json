@@ -1,0 +1,37 @@
+{
+  "bathtub_01": {
+    "albedo": "bathtub_01_AlbedoTransparency.png",
+    "normal": "bathtub_01_Normal.png",
+    "metallic": "bathtub_01_MetallicSmoothness.png"
+  },
+  "bathtub_01_bar": {
+    "albedo": "bathtub_01_bar_AlbedoTransparency.png",
+    "normal": "bathtub_01_bar_Normal.png",
+    "metallic": "bathtub_01_bar_MetallicSmoothness.png"
+  },
+  "bathtub_01_bar_curtain": {
+    "albedo": "bathtub_01_bar_curtain_AlbedoTransparency.png",
+    "normal": "bathtub_01_bar_curtain_Normal.png",
+    "metallic": "bathtub_01_bar_curtain_MetallicSmoothness.png"
+  },
+  "bathtub_01_drain_bottom": {
+    "albedo": "bathtub_01_drain_bottom_AlbedoTransparency.png",
+    "normal": "bathtub_01_drain_bottom_Normal.png",
+    "metallic": "bathtub_01_drain_bottom_MetallicSmoothness.png"
+  },
+  "bathtub_01_drain_top": {
+    "albedo": "bathtub_01_drain_top_AlbedoTransparency.png",
+    "normal": "bathtub_01_drain_top_Normal.png",
+    "metallic": "bathtub_01_drain_top_MetallicSmoothness.png"
+  },
+  "bathtub_01_regulator": {
+    "albedo": "bathtub_01_regulator_AlbedoTransparency.png",
+    "normal": "bathtub_01_regulator_Normal.png",
+    "metallic": "bathtub_01_regulator_MetallicSmoothness.png"
+  },
+  "bathtub_01_tap": {
+    "albedo": "bathtub_01_tap_AlbedoTransparency.png",
+    "normal": "bathtub_01_tap_Normal.png",
+    "metallic": "bathtub_01_tap_MetallicSmoothness.png"
+  }
+}

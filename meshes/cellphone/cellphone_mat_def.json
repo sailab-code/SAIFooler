@@ -1,0 +1,7 @@
+{
+  "cellphone_01": {
+    "albedo": "cellphone_01_AlbedoTransparency.png",
+    "normal": "cellphone_01_Normal.png",
+    "metallic": "cellphone_01_MetallicSmoothness.png"
+  }
+}

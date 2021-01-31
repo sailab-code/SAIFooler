@@ -1,0 +1,7 @@
+{
+  "candle_01": {
+    "albedo": "candle_01_AlbedoTransparency.png",
+    "normal": "candle_01_Normal.png",
+    "metallic": "candle_01_MetallicSmoothness.png"
+  }
+}

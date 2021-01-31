@@ -1,0 +1,26 @@
+# Blender MTL File: 'workspace.blend'
+# Material Count: 2
+
+newmtl tv_01_mat
+Ns 143.999983
+Ka 1.000000 1.000000 1.000000
+Kd 0.020379 0.020379 0.020379
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump tv_wall_01_Normal.png
+map_Kd tv_wall_01_AlbedoTransparency.png
+
+newmtl tv_wall_01_screen
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.054969 0.054969 0.054969
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump tv_wall_01_screen_Normal.png
+map_Kd tv_wall_01_screen_AlbedoTransparency.png

@@ -1,0 +1,7 @@
+{
+  "lamp_floor_01": {
+    "albedo": "lamp_floor_01_AlbedoTransparency.png",
+    "normal": "lamp_floor_01_Normal.png",
+    "metallic": "lamp_floor_01_MetallicSmoothness.png"
+  }
+}
