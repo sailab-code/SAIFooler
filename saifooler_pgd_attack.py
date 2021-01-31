@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     for mesh_name, mesh_def in meshes_def.items():
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
-        elevation, distance = mesh_def["elevation"], mesh_def["distance"]
+        distance = mesh_def["distance"]
         mesh_descriptor = MeshDescriptor(mesh_path)
         classifier = ImageNetClassifier(used_model)
         render_module = RenderModule()
