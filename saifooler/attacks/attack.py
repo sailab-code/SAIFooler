@@ -96,7 +96,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.log(f"{self.mesh_name}/{phase}_accuracy", acc, prog_bar=True)
         self.print(f'{phase.capitalize()} accuracy: {correct}/{total} = {acc}')
 
-        if self.current_epoch == 0:
+        if self.current_epoch == 0 and phase == 'train':
             # save the accuracy before attack
             self.accuracies["before_attack"] = acc
 
