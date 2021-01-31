@@ -31,8 +31,8 @@ class SailenvEvaluator(pl.LightningModule):
         self.set_unity_lights()
 
     def set_unity_lights(self):
-        main_r, main_g, main_b = self.p3d_lights.diffuse_color
-        rim_r, rim_g, rim_b = self.p3d_lights.ambient_color
+        main_r, main_g, main_b = (self.p3d_lights.diffuse_color[0] * 255).to(dtype=torch.uint8)
+        rim_r, rim_g, rim_b = (self.p3d_lights.ambient_color[0] * 255).to(dtype=torch.uint8)
 
         self.agent.set_light_color("Main Light", main_r, main_g, main_b)
         self.agent.set_light_color("Rim Light", rim_r, rim_g, rim_b)
@@ -56,9 +56,10 @@ class SailenvEvaluator(pl.LightningModule):
         # It will return a point in the unit sphere that represent the opposite of our direction
         # distance is fixed at 1 so we get a unit vector
 
-        direction = -camera_position_from_spherical_angles(1., elevation, azimuth)
+        direction = -camera_position_from_spherical_angles(1., elevation, azimuth)[0]
         direction = direction.detach().cpu().numpy().tolist()
-        self.agent.set_light_direction(self.light_name, direction)
+        self.agent.set_light_direction("Main Light", direction)
+        self.agent.set_light_direction("Rim Light", direction)
 
     def render(self):
         frame = torch.tensor(self.agent.get_frame()["main"])
@@ -71,11 +72,14 @@ class SailenvEvaluator(pl.LightningModule):
 
     def evaluate(self, logger=None):
         self.spawn_obj()
-        images = []
 
         for batch_render_inputs, batch_targets in self.data_module.test_dataloader():
+            images = []
             for render_input, target in zip(batch_render_inputs, batch_targets):
-                self.look_at_mesh(*render_input)
+                distance, camera_azim, camera_elev = render_input[:3]
+                self.look_at_mesh(distance, camera_azim, camera_elev)
+                lights_azim, lights_elev = render_input[3:]
+                self.set_lights_direction(lights_azim, lights_elev)
                 image = self.render()
                 images.append(image.unsqueeze(0).to(self.classifier.device))
 
@@ -83,7 +87,8 @@ class SailenvEvaluator(pl.LightningModule):
             class_tensor = self.classifier.classify(images)
             _, classes_predicted = class_tensor.max(1, keepdim=True)
             self.accuracy(classes_predicted, batch_targets)
-            self.despawn_obj()
+
+        self.despawn_obj()
 
         if logger is not None:
             images_grid = Viewer3D.make_grid(images)
