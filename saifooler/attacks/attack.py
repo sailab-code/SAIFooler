@@ -14,7 +14,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon, mesh_name="", mini_batch_size=6, *args, **kwargs):
+    def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon,
+                 mesh_name="", mini_batch_size=6, saliency_maps=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if isinstance(mesh, Meshes):
@@ -36,6 +37,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
             torch.zeros_like(self.src_texture)
         )
         self.register_parameter("delta", self.delta)
+
+        self.saliency_maps = saliency_maps
 
         # call update_textures to set the parameter as texture
         # or else it will not use it at first epoch
@@ -175,10 +178,29 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         return total_loss, predictions, targets
 
+    def compute_saliency_maps(self, images):
+        images = images.detach().clone()
+        images.requires_grad_(True)
+
+        scores = self.classifier.classify(images)
+        max_score, _ = scores.max(1, keepdim=True)
+        max_score.backward(torch.ones_like(max_score))
+        saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3)
+        return saliency_maps
+
     def handle_mini_batch(self, mini_batch, mini_batch_idx, batch_idx):
         render_inputs, targets = mini_batch
 
         images = self.render_batch(render_inputs)
+        global_step = (self.current_epoch * self.trainer.num_training_batches + batch_idx * self.mini_batch_size + mini_batch_idx)
+
+        if self.saliency_maps and not self.trainer.testing:
+            saliency_maps = self.compute_saliency_maps(images)
+            """for idx, saliency_map in enumerate(saliency_maps):
+                fig = sns.heatmap(saliency_map.detach().cpu()).get_figure()
+                self.logger.experiment.add_figure(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}_saliencymap{idx}",
+                                                 fig, global_step=global_step*self.mini_batch_size + idx)"""
+
 
         # classify images and extract class predictions
         class_tensors = self.classifier.classify(images)
@@ -192,7 +214,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         # compute CrossEntropyLoss
         loss = loss_fn(class_tensors, loss_targets.squeeze(1))
         images_grid = Viewer3D.make_grid(images)
-        global_step = (self.current_epoch * self.trainer.num_training_batches + batch_idx * self.mini_batch_size + mini_batch_idx)
         self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}", images_grid.permute((2, 0, 1)), global_step=global_step)
 
         return loss, classes_predicted
