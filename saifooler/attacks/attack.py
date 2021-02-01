@@ -15,7 +15,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         pass
 
     def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon,
-                 mesh_name="", mini_batch_size=6, saliency_maps=False, *args, **kwargs):
+                 mesh_name="", saliency_maps=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if isinstance(mesh, Meshes):
@@ -25,8 +25,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         self.render_module = render_module
         self.mesh_name = mesh_name
-
-        self.mini_batch_size = mini_batch_size
 
         self.classifier = classifier
         self.epsilon = epsilon
@@ -158,26 +156,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.to('cpu')
         super().cpu()
 
-    def handle_batch(self, batch, batch_idx):
-        render_inputs, targets = batch
-
-        batch_losses, batch_predictions = [], []
-        # split batch into several mini batches
-        for i in range(0, render_inputs.shape[0], self.mini_batch_size):
-            mini_batch_slice = slice(i, i+self.mini_batch_size)
-            mini_batch_inputs = render_inputs[mini_batch_slice]
-            mini_batch_targets = targets[mini_batch_slice]
-            mini_batch_idx = int(i / self.mini_batch_size)
-            mini_batch_output = self.handle_mini_batch((mini_batch_inputs, mini_batch_targets), mini_batch_idx, batch_idx)
-            loss, predictions = mini_batch_output
-            batch_losses.append(loss)
-            batch_predictions.append(predictions)
-
-        total_loss = sum(batch_losses)
-        predictions = torch.cat(batch_predictions, 0)
-
-        return total_loss, predictions, targets
-
     def compute_saliency_maps(self, images):
         images = images.detach().clone()
         images.requires_grad_(True)
@@ -188,11 +166,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3)
         return saliency_maps
 
-    def handle_mini_batch(self, mini_batch, mini_batch_idx, batch_idx):
-        render_inputs, targets = mini_batch
-
+    def handle_batch(self, batch, batch_idx):
+        render_inputs, targets = batch
         images = self.render_batch(render_inputs)
-        global_step = (self.current_epoch * self.trainer.num_training_batches + batch_idx * self.mini_batch_size + mini_batch_idx)
 
         if self.saliency_maps and not self.trainer.testing:
             saliency_maps = self.compute_saliency_maps(images)
@@ -214,9 +190,10 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         # compute CrossEntropyLoss
         loss = loss_fn(class_tensors, loss_targets.squeeze(1))
         images_grid = Viewer3D.make_grid(images)
-        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}", images_grid.permute((2, 0, 1)), global_step=global_step)
+        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}",
+                                         images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
-        return loss, classes_predicted
+        return loss, classes_predicted, targets
 
     @abc.abstractmethod
     def configure_optimizers(self):
