@@ -112,7 +112,8 @@ if __name__ == '__main__':
             batch_size=30)
 
         data_module.setup()
-        attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha, mesh_name=mesh_name)
+        attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha,
+                             mesh_name=mesh_name, saliency_maps=True)
         attacker.to(device)
 
         trainer = pl.Trainer(

@@ -7,6 +7,7 @@ from pytorch3d.structures import Meshes
 import pytorch3d.io as py3dio
 from torch.nn import CrossEntropyLoss
 
+from saifooler.utils import greyscale_heatmap
 from saifooler.viewers.viewer import Viewer3D
 
 
@@ -172,10 +173,10 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         if self.saliency_maps and not self.trainer.testing:
             saliency_maps = self.compute_saliency_maps(images)
-            """for idx, saliency_map in enumerate(saliency_maps):
-                fig = sns.heatmap(saliency_map.detach().cpu()).get_figure()
-                self.logger.experiment.add_figure(f"{self.mesh_name}/pytorch3d_batch{mini_batch_idx}_saliencymap{idx}",
-                                                 fig, global_step=global_step*self.mini_batch_size + idx)"""
+            heatmaps = greyscale_heatmap(saliency_maps)
+            saliency_grid = Viewer3D.make_grid(heatmaps.unsqueeze(3))
+            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_saliency",
+                                             saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
 
         # classify images and extract class predictions
