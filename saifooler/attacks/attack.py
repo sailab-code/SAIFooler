@@ -164,7 +164,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         scores = self.classifier.classify(images)
         max_score, _ = scores.max(1, keepdim=True)
         max_score.backward(torch.ones_like(max_score))
-        saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3)
+        saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3, keepdim=True)
         return saliency_maps
 
     def handle_batch(self, batch, batch_idx):
@@ -174,7 +174,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         if self.saliency_maps and not self.trainer.testing:
             saliency_maps = self.compute_saliency_maps(images)
             heatmaps = greyscale_heatmap(saliency_maps)
-            saliency_grid = Viewer3D.make_grid(heatmaps.unsqueeze(3))
+            saliency_grid = Viewer3D.make_grid(heatmaps)
             self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_saliency",
                                              saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
