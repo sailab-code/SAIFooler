@@ -4,11 +4,6 @@
         "distance": 0.2,
         "target_class": 530
     },
-    "bathtub": {
-        "path": "./meshes/bathtub",
-        "distance": 2.5,
-        "target_class": 435
-    },
     "candle": {
         "path": "./meshes/candle",
         "distance": 0.2,
@@ -53,11 +48,6 @@
         "path": "./meshes/toilet_paper",
         "distance": 0.2,
         "target_class": 999
-    },
-    "towel": {
-        "path": "./meshes/towel",
-        "distance": 0.65,
-        "target_class": 434
     },
     "tv_wall": {
         "path": "./meshes/tv_wall",
