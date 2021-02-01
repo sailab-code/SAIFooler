@@ -110,6 +110,8 @@ if __name__ == '__main__':
             light_azim_steps=4,
             light_elev_steps=4,
             batch_size=30)
+
+        data_module.setup()
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha, mesh_name=mesh_name)
         attacker.to(device)
 
@@ -117,6 +119,7 @@ if __name__ == '__main__':
             num_sanity_val_steps=0,
             max_epochs=1,
             weights_summary=None,
+            accumulate_grad_batches=data_module.number_of_batches,
             # progress_bar_refresh_rate=0,
             gpus=1,
             logger=logger
@@ -162,7 +165,7 @@ if __name__ == '__main__':
             noattack_accuracy = 0.
             attack_accuracy = 0.
 
-        fig = sns.barplot(
+        plot = sns.barplot(
             x=[
                 'pytorch_no_attack',
                 'pytorch_attack',
@@ -175,7 +178,11 @@ if __name__ == '__main__':
                 noattack_accuracy,
                 attack_accuracy
             ]
-        ).get_figure()
+        )
+
+        plot.set(ylim=(0.,1.))
+
+        fig = plot.get_figure()
 
         logger.experiment.add_figure(f"{mesh_name}/summary", fig)
 

@@ -27,6 +27,10 @@ class MultipleViewModule(pl.LightningDataModule):
     def total_steps(self):
         return self.light_elev_steps * self.light_azim_steps * self.orientation_azim_steps * self.orientation_elev_steps
 
+    @property
+    def number_of_batches(self):
+        return self.total_steps // self.batch_size
+
     def setup(self, stage=None):
         orientations_azim = torch.linspace(0., 360., self.orientation_azim_steps)
         orientations_elev = torch.linspace(-90., 90., self.orientation_elev_steps)
