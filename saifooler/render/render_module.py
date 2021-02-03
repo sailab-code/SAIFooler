@@ -110,6 +110,12 @@ class RenderModule(pl.LightningModule):
 
         return self.renderer(mesh_ext)[..., :3]
 
+    def get_view2tex_map(self, mesh):
+        if not isinstance(mesh, Meshes):
+            raise ValueError("mesh must be of type Meshes")
+
+        return self.renderer.get_view_to_texture_map(mesh).squeeze(3)
+
     def forward(self, mesh):
         return self.render(mesh)
 

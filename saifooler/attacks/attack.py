@@ -1,14 +1,18 @@
 import abc
 from typing import Any, Union
 
+from PIL import Image, ImageEnhance
 import torch
 import pytorch_lightning as pl
 from pytorch3d.structures import Meshes
 import pytorch3d.io as py3dio
 from torch.nn import CrossEntropyLoss
 
+from saifooler.render.render_module import RenderModule
 from saifooler.utils import greyscale_heatmap
 from saifooler.viewers.viewer import Viewer3D
+
+import torchvision.transforms.functional as TF
 
 
 class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
@@ -24,7 +28,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         elif isinstance(mesh, str):
             self.mesh: Meshes = py3dio.load_objs_as_meshes([mesh], device=self.device)
 
-        self.render_module = render_module
+        self.render_module: RenderModule = render_module
         self.mesh_name = mesh_name
 
         self.classifier = classifier
@@ -69,9 +73,11 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         lights_azim, lights_elev = render_input[3:]
         self.render_module.set_lights_direction(lights_azim, lights_elev)
 
-
     def render(self):
         return self.render_module.render(self.mesh)
+
+    def get_view2tex_map(self):
+        return self.render_module.get_view2tex_map(self.mesh)
 
     def get_textures(self):
         textures = self.mesh.textures.get_textures()
@@ -83,12 +89,15 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def render_batch(self, render_inputs):
         # we must render each image separately, batch rendering is broken for some reason
         images = []
+        view2tex_maps = []
         for render_input in render_inputs:
             self.apply_input(render_input)
             image = self.render()
+            view2tex_map = self.get_view2tex_map()
             images.append(image)
+            view2tex_maps.append(view2tex_map)
 
-        return torch.cat(images, 0)
+        return torch.cat(images, 0), torch.cat(view2tex_maps, 0)
 
     def __log_accuracy(self, accuracy, phase: str):
         correct = accuracy.correct.item()
@@ -168,14 +177,52 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         return saliency_maps
 
     def handle_batch(self, batch, batch_idx):
+        """
+        N batch size, WxH view size
+        :param batch:
+        :param batch_idx:
+        :return:
+        """
         render_inputs, targets = batch
-        images = self.render_batch(render_inputs)
+        images, view2tex_maps = self.render_batch(render_inputs)
+        batch_size = render_inputs.shape[0]
+
+        images_grid = Viewer3D.make_grid(images)
+        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}",
+                                         images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
         if self.saliency_maps and not self.trainer.testing:
-            saliency_maps = self.compute_saliency_maps(images)
-            heatmaps = greyscale_heatmap(saliency_maps)
+            saliency_maps = self.compute_saliency_maps(images) # NxWxHx1 between 0..inf
+            heatmaps = greyscale_heatmap(saliency_maps) # NxWxHx1 between 0..1
             saliency_grid = Viewer3D.make_grid(heatmaps)
-            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_saliency",
+            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_view_saliency",
+                                             saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
+
+            #  shape is (1 x Wt x Ht x 3), the first and last dimensions are omitted, leaving (Wt x Ht)
+            tex_shape = self.mesh.textures.maps_padded().shape[1:-1]
+            view2tex_maps = (view2tex_maps * torch.tensor(tex_shape, device=self.device)).to(dtype=torch.long)
+            tex_saliency = torch.zeros(tex_shape, device=self.device)
+
+            for idx in range(batch_size):
+                tex_saliency[(view2tex_maps[idx, ..., 1], view2tex_maps[idx, ..., 0])] += saliency_maps.squeeze(3)[idx]
+
+            heatmaps = greyscale_heatmap(tex_saliency.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
+
+            red_heatmap = torch.zeros((*heatmaps.shape[1:-1], 3))
+            red_heatmap[..., 0] = heatmaps[..., 0]
+            heatmap_img = TF.to_pil_image(red_heatmap.permute(2, 0, 1))
+            tex_img = TF.to_pil_image(self.src_texture.squeeze(0).cpu().permute(2, 0, 1))
+
+            blended = Image.blend(heatmap_img, tex_img, 0.1)
+            brightness_enhance = ImageEnhance.Brightness(blended)
+            blended = brightness_enhance.enhance(2.5)
+
+            blended = TF.pil_to_tensor(blended).to(dtype=torch.float32) / 255
+            blended = blended.permute(1, 2, 0).unsqueeze(0)
+
+
+            saliency_grid = Viewer3D.make_grid(blended)
+            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_tex_saliency",
                                              saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
 
@@ -190,9 +237,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         # compute CrossEntropyLoss
         loss = loss_fn(class_tensors, loss_targets.squeeze(1))
-        images_grid = Viewer3D.make_grid(images)
-        self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}",
-                                         images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
 
         return loss, classes_predicted, targets
 
