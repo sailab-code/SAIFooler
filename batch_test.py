@@ -14,7 +14,7 @@ from saifooler.render.render_module import RenderModule
 from saifooler.attacks.fgsm_attack import FGSMAttack
 from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
-from saifooler.render.unity_evaluator import SailenvEvaluator
+from saifooler.render.unity_evaluator import SailenvModule
 
 import pytorch3d.io as py3dio
 

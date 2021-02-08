@@ -172,6 +172,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         scores = self.classifier.classify(images)
         max_score, _ = scores.max(1, keepdim=True)
+        # todo: check if can backward on max_score.sum()
         max_score.backward(torch.ones_like(max_score))
         saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3, keepdim=True)
         return saliency_maps
@@ -205,6 +206,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
             for idx in range(batch_size):
                 tex_saliency[(view2tex_maps[idx, ..., 1], view2tex_maps[idx, ..., 0])] += saliency_maps.squeeze(3)[idx]
+            # todo: divide for batch_size in optimizer
+
 
             heatmaps = greyscale_heatmap(tex_saliency.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
 

@@ -13,7 +13,7 @@ from saifooler.render.render_module import RenderModule
 from saifooler.attacks.fgsm_attack import FGSMAttack
 from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
-from saifooler.render.unity_evaluator import SailenvEvaluator
+from saifooler.render.unity_evaluator import SailenvModule
 
 from pytorch_lightning.loggers import TensorBoardLogger
 
@@ -138,11 +138,11 @@ if __name__ == '__main__':
             original_zip_path = mesh_descriptor.save_to_zip()
 
             # prepare rendering on SAILenv
-            sailenv_noattack_evaluator = SailenvEvaluator(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier)
+            sailenv_noattack_evaluator = SailenvModule(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier)
             noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger).item()
             print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
 
-            sailenv_attack_evaluator = SailenvEvaluator(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier)
+            sailenv_attack_evaluator = SailenvModule(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier)
             attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
 
             print(f"Accuracy on SAILenv after attack: {attack_accuracy * 100}%")

@@ -18,18 +18,18 @@ model_name = "inception"
 #model_name = "mobilenet"
 
 
-mesh_path = "./meshes/toilet"
+mesh_path = "./meshes/tv_wall"
 
 target_class = 532
 epsilon = 0.66
 
-views_module = OrientationDataModule(target_class, 45., 2., 4)
+views_module = OrientationDataModule(target_class, 45., 1.05, 4)
 views_module.setup()
 
 def view_model(viewer_):
     with torch.no_grad():
         viewer_.multi_view_grid(views_module.inputs)
-        viewer_.textures()
+        #viewer_.textures()
 
 
 if __name__ == '__main__':
