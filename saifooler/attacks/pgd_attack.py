@@ -10,7 +10,7 @@ from saifooler.viewers.viewer import Viewer3D
 
 
 class PGDOptimizer(torch.optim.Optimizer):
-    def __init__(self, params, alpha, epsilon, src_texture):
+    def __init__(self, params, alpha, epsilon, src_texture, saliency_map=None):
 
         if alpha < 0.:
             raise ValueError("alpha must be a non-negative value")
@@ -24,6 +24,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 "params": param,
                 "name": f"texture {idx}",
                 "src_tex": src_texture,
+                "saliency_map": saliency_map,
                 "eps": epsilon,
                 "alpha": alpha
             }
@@ -50,6 +51,7 @@ class PGDOptimizer(torch.optim.Optimizer):
             eps = group["eps"]
             alpha = group["alpha"]
             src_tex = group["src_tex"]
+            saliency_map = group["saliency_map"].unsqueeze(0).unsqueeze(3)
 
             for param in group["params"]:
                 if param.grad is None:
@@ -58,7 +60,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 p_grad = param.grad
                 p_data = param.data.clone()
                 # p_data += alpha * p_grad / self._norms(p_grad)
-                p_data += alpha * p_grad.sign()
+                p_data += alpha * p_grad.sign() * saliency_map
 
                 # clip src_tex + param between [0,1]
                 p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
@@ -76,4 +78,4 @@ class PGDAttack(SaifoolerAttack):
         self.alpha = alpha
 
     def configure_optimizers(self):
-        return PGDOptimizer(self.parameters(), self.alpha, self.epsilon, self.src_texture)
+        return PGDOptimizer(self.parameters(), self.alpha, self.epsilon, self.src_texture, self.saliency_maps)

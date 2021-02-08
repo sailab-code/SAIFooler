@@ -18,7 +18,11 @@ from saifooler.render.unity_evaluator import SailenvModule
 
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from saifooler.viewers.viewer import Viewer3D
+from saifooler.saliency.saliency_estimator import SaliencyEstimator
+from saifooler.utils import greyscale_heatmap
+import torchvision.transforms.functional as TF
+from PIL import Image, ImageEnhance
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description="Settings for PGD Attack to obj textures")
 parser.add_argument('--meshes_definition', metavar='meshes_definition', type=str,
@@ -53,6 +57,29 @@ def view_model(_viewer, _views_module):
     with torch.no_grad():
         _viewer.multi_view_grid(_views_module.inputs)
         _viewer.textures()
+
+
+def show_saliency(saliency_maps):
+    heatmaps = greyscale_heatmap(saliency_maps.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
+
+    red_heatmap = torch.zeros((*heatmaps.shape[1:-1], 3))
+    red_heatmap[..., 0] = heatmaps[..., 0]
+
+    heatmap_img = TF.to_pil_image(red_heatmap.permute(2, 0, 1))
+
+    src_texture = mesh_descriptor.mesh.textures.maps_padded()
+    src_tex_img = TF.to_pil_image(src_texture.squeeze(0).permute(2, 0, 1).cpu())
+
+    blended = Image.blend(heatmap_img, src_tex_img, 0.1)
+    brightness_enhance = ImageEnhance.Brightness(blended)
+    blended = brightness_enhance.enhance(3.5)
+
+    blended = TF.pil_to_tensor(blended).to(dtype=torch.float32) / 255
+    blended = blended.permute(1, 2, 0)
+
+    plt.figure()
+    plt.imshow(blended.cpu().numpy())
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -103,29 +130,56 @@ if __name__ == '__main__':
         mesh_descriptor = MeshDescriptor(mesh_path)
         classifier = ImageNetClassifier(used_model)
         render_module = RenderModule()
+
+
         data_module = MultipleViewModule(
             target_class, distance,
-            orientation_elev_steps=5,
-            orientation_azim_steps=6,
-            light_azim_steps=4,
-            light_elev_steps=4,
+            orientation_elev_steps=20,
+            orientation_azim_steps=24,
+            light_azim_steps=1,
+            light_elev_steps=1,
             batch_size=30)
 
         data_module.setup()
+
+        if test_on_unity:
+            # save the original mesh as a zip file
+            original_zip_path = mesh_descriptor.save_to_zip()
+            sailenv_noattack_evaluator = SailenvModule(agent, original_zip_path, f"{mesh_name}/sailenv", data_module,
+                                                       classifier, render_module)
+            sailenv_noattack_evaluator.to(device)
+            sailenv_noattack_evaluator.spawn_obj()
+        else:
+            sailenv_noattack_evaluator = None
+
+        saliency_estimator = SaliencyEstimator(
+            mesh_descriptor.mesh,
+            classifier,
+            render_module,
+            sailenv_noattack_evaluator,
+            data_module
+        )
+
+        saliency_estimator.to(device)
+        saliency_maps = saliency_estimator.estimate_saliency_map()
+        show_saliency(saliency_maps)
+
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha,
-                             mesh_name=mesh_name, saliency_maps=True)
+                             mesh_name=mesh_name, saliency_maps=saliency_maps)
         attacker.to(device)
 
         pl.Trainer()
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=1,
+            max_epochs=3,
             weights_summary=None,
             accumulate_grad_batches=data_module.number_of_batches,
             # progress_bar_refresh_rate=0,
             gpus=1,
             logger=logger
         )
+
+        attacker.to(device)
 
         print(f"Attack begin against {mesh_name}")
         trainer.fit(attacker, datamodule=data_module)
@@ -148,16 +202,16 @@ if __name__ == '__main__':
             # save the attacked mesh as a zip file
             attacked_zip_path = attacked_mesh_descriptor.save_to_zip()
 
-            # save the original mesh as a zip file
-            original_zip_path = mesh_descriptor.save_to_zip()
 
             # prepare rendering on SAILenv
-            sailenv_noattack_evaluator = SailenvModule(agent, original_zip_path, f"{mesh_name}/sailenv", data_module, classifier, render_module)
+
             noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger).item()
             print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
 
             sailenv_attack_evaluator = SailenvModule(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier, render_module)
             attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
+
+            sailenv_noattack_evaluator.despawn_obj()
 
             del sailenv_attack_evaluator
             del sailenv_noattack_evaluator

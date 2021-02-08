@@ -55,6 +55,8 @@ class SaliencyEstimator:
 
         view2tex_maps = None
         for idx, render_module in enumerate([self.p3d_module, self.unity_module]):
+            if render_module is None:
+                del tex_saliencies[idx] # if unity module is not provided, just skip it
             for batch in self.data_module.test_dataloader():
                 images, view2tex_maps = self.render_batch(render_module, batch, view2tex_maps)
                 view_saliency_maps = self.compute_batch_view_saliency_maps(images)

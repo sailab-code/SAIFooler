@@ -71,7 +71,6 @@ class SailenvModule(pl.LightningModule):
         return torch.fliplr(frame).clone().unsqueeze(0)
 
     def evaluate(self, logger=None):
-        self.spawn_obj()
 
         for batch_render_inputs, batch_targets in self.data_module.test_dataloader():
             images = []
@@ -81,14 +80,12 @@ class SailenvModule(pl.LightningModule):
                 lights_azim, lights_elev = render_input[3:]
                 self.set_lights_direction(lights_azim, lights_elev)
                 image = self.render()
-                images.append(image.unsqueeze(0).to(self.classifier.device))
+                images.append(image.to(self.classifier.device))
 
             images = torch.cat(images)
             class_tensor = self.classifier.classify(images)
             _, classes_predicted = class_tensor.max(1, keepdim=True)
             self.accuracy(classes_predicted, batch_targets)
-
-        self.despawn_obj()
 
         if logger is not None:
             images_grid = Viewer3D.make_grid(images)

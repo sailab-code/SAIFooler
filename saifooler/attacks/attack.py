@@ -20,7 +20,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         pass
 
     def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon,
-                 mesh_name="", saliency_maps=False, *args, **kwargs):
+                 mesh_name="", saliency_maps=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if isinstance(mesh, Meshes):
@@ -166,17 +166,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.to('cpu')
         super().cpu()
 
-    def compute_saliency_maps(self, images):
-        images = images.detach().clone()
-        images.requires_grad_(True)
-
-        scores = self.classifier.classify(images)
-        max_score, _ = scores.max(1, keepdim=True)
-        # todo: check if can backward on max_score.sum()
-        max_score.backward(torch.ones_like(max_score))
-        saliency_maps, _ = torch.max(images.grad.data.abs(), dim=3, keepdim=True)
-        return saliency_maps
-
     def handle_batch(self, batch, batch_idx):
         """
         N batch size, WxH view size
@@ -186,48 +175,10 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         """
         render_inputs, targets = batch
         images, view2tex_maps = self.render_batch(render_inputs)
-        batch_size = render_inputs.shape[0]
 
         images_grid = Viewer3D.make_grid(images)
         self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}",
                                          images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
-
-        if self.saliency_maps and not self.trainer.testing:
-            saliency_maps = self.compute_saliency_maps(images) # NxWxHx1 between 0..inf
-            heatmaps = greyscale_heatmap(saliency_maps) # NxWxHx1 between 0..1
-            saliency_grid = Viewer3D.make_grid(heatmaps)
-            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_view_saliency",
-                                             saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
-
-            #  shape is (1 x Wt x Ht x 3), the first and last dimensions are omitted, leaving (Wt x Ht)
-            tex_shape = self.mesh.textures.maps_padded().shape[1:-1]
-            view2tex_maps = (view2tex_maps * torch.tensor(tex_shape, device=self.device)).to(dtype=torch.long)
-            tex_saliency = torch.zeros(tex_shape, device=self.device)
-
-            for idx in range(batch_size):
-                tex_saliency[(view2tex_maps[idx, ..., 1], view2tex_maps[idx, ..., 0])] += saliency_maps.squeeze(3)[idx]
-            # todo: divide for batch_size in optimizer
-
-
-            heatmaps = greyscale_heatmap(tex_saliency.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
-
-            red_heatmap = torch.zeros((*heatmaps.shape[1:-1], 3))
-            red_heatmap[..., 0] = heatmaps[..., 0]
-            heatmap_img = TF.to_pil_image(red_heatmap.permute(2, 0, 1))
-            tex_img = TF.to_pil_image(self.src_texture.squeeze(0).cpu().permute(2, 0, 1))
-
-            blended = Image.blend(heatmap_img, tex_img, 0.1)
-            brightness_enhance = ImageEnhance.Brightness(blended)
-            blended = brightness_enhance.enhance(2.5)
-
-            blended = TF.pil_to_tensor(blended).to(dtype=torch.float32) / 255
-            blended = blended.permute(1, 2, 0).unsqueeze(0)
-
-
-            saliency_grid = Viewer3D.make_grid(blended)
-            self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}_tex_saliency",
-                                             saliency_grid.permute((2, 0, 1)), global_step=self.current_epoch)
-
 
         # classify images and extract class predictions
         class_tensors = self.classifier.classify(images)
