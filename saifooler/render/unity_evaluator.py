@@ -4,6 +4,7 @@ from pytorch3d.renderer import camera_position_from_spherical_angles, Directiona
 from sailenv.agent import Agent
 import pytorch_lightning as pl
 import torch
+from tqdm import tqdm
 
 from saifooler.viewers.viewer import Viewer3D
 
@@ -72,7 +73,7 @@ class SailenvModule(pl.LightningModule):
 
     def evaluate(self, logger=None):
 
-        for batch_render_inputs, batch_targets in self.data_module.test_dataloader():
+        for batch_render_inputs, batch_targets in tqdm(self.data_module.test_dataloader(), desc="Batch"):
             images = []
             for render_input, target in zip(batch_render_inputs, batch_targets):
                 distance, camera_azim, camera_elev = render_input[:3]

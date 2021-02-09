@@ -1,4 +1,5 @@
 import torch
+from tqdm import tqdm
 
 class SaliencyEstimator:
     def __init__(self, mesh, classifier, p3d_module, unity_module, data_module, use_cache=False):
@@ -54,10 +55,10 @@ class SaliencyEstimator:
         tex_saliencies = [[], []]
 
         view2tex_maps = None
-        for idx, render_module in enumerate([self.p3d_module, self.unity_module]):
+        for idx, render_module in tqdm(enumerate([self.p3d_module, self.unity_module]), position=0, desc="Module"):
             if render_module is None:
                 del tex_saliencies[idx] # if unity module is not provided, just skip it
-            for batch in self.data_module.test_dataloader():
+            for batch in tqdm(self.data_module.test_dataloader(), position=1, desc="Batch"):
                 images, view2tex_maps = self.render_batch(render_module, batch, view2tex_maps)
                 view_saliency_maps = self.compute_batch_view_saliency_maps(images)
                 tex_saliency_maps = self.convert_view2tex_saliency_maps(view_saliency_maps, view2tex_maps)
