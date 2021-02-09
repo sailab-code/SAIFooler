@@ -6,16 +6,27 @@ from torch.utils.data import TensorDataset, DataLoader
 class MultipleViewModule(pl.LightningDataModule):
     def __init__(self, target_class,
                  distance=0.,
-                 orientation_elev_steps=18,
+                 orientation_azim_range=(0., 360.),
                  orientation_azim_steps=36,
-                 light_elev_steps=4,
+                 orientation_elev_range=(-90., 90.),
+                 orientation_elev_steps=18,
+                 light_azim_range=(0., 360.),
                  light_azim_steps=8,
+                 light_elev_range=(-90., 90.),
+                 light_elev_steps=4,
                  batch_size=None):
         super().__init__()
+
+        self.light_azim_range = light_azim_range
         self.light_azim_steps = light_azim_steps
+        self.light_elev_range = light_elev_range
         self.light_elev_steps = light_elev_steps
+
+        self.orientation_azim_range = orientation_azim_range
         self.orientation_azim_steps = orientation_azim_steps
+        self.orientation_elev_range = orientation_elev_range
         self.orientation_elev_steps = orientation_elev_steps
+        
         self.target_class = target_class
         self.distance = distance
 

@@ -38,6 +38,8 @@ parser.add_argument('--eps', metavar="epsilon", type=float,
 parser.add_argument('--alpha', metavar="alpha", type=float,
                     required=True,
                     help="Alpha of the PGD attack")
+parser.add_argument('--saliency', metavar='saliency', type=bool,
+                    default=False, help="Wheter to use saliency for attack" )
 parser.add_argument('--classifier', metavar="classifier", type=str,
                     required=True,
                     help="The classifier to be attacked. Choose between inception and mobilenet.")
@@ -59,7 +61,7 @@ def view_model(_viewer, _views_module):
         _viewer.textures()
 
 
-def show_saliency(saliency_maps):
+def show_saliency(saliency_maps, logger, mesh_name):
     heatmaps = greyscale_heatmap(saliency_maps.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
 
     red_heatmap = torch.zeros((*heatmaps.shape[1:-1], 3))
@@ -75,11 +77,7 @@ def show_saliency(saliency_maps):
     blended = brightness_enhance.enhance(3.5)
 
     blended = TF.pil_to_tensor(blended).to(dtype=torch.float32) / 255
-    blended = blended.permute(1, 2, 0)
-
-    plt.figure()
-    plt.imshow(blended.cpu().numpy())
-    plt.show()
+    logger.experiment.add_image(f"{mesh_name}/saliency", blended)
 
 
 if __name__ == '__main__':
@@ -107,6 +105,8 @@ if __name__ == '__main__':
 
     logger = TensorBoardLogger("./logs/pgd")
 
+    use_saliency = args.saliency
+
     # register agent for SAILenv
     test_on_unity = args.unitytest
     if test_on_unity:
@@ -124,20 +124,23 @@ if __name__ == '__main__':
         agent.change_main_camera_clear_flags(255, 255, 255)
         agent.change_scene("object_view/scene")
 
+    classifier = ImageNetClassifier(used_model)
+    render_module = RenderModule()
+
     for mesh_name, mesh_def in meshes_def.items():
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
         distance = mesh_def["distance"]
-        mesh_descriptor = MeshDescriptor(mesh_path)
-        classifier = ImageNetClassifier(used_model)
-        render_module = RenderModule()
+        orientation_elev_range = mesh_def.get("orientation_elev_range", [-90., 90.])
 
+        mesh_descriptor = MeshDescriptor(mesh_path)
 
         data_module = MultipleViewModule(
             target_class, distance,
-            orientation_elev_steps=20,
-            orientation_azim_steps=24,
-            light_azim_steps=1,
-            light_elev_steps=1,
+            orientation_elev_range=orientation_elev_range,
+            orientation_elev_steps=6,
+            orientation_azim_steps=15,
+            light_azim_steps=3,
+            light_elev_steps=3,
             batch_size=30)
 
         data_module.setup()
@@ -161,8 +164,11 @@ if __name__ == '__main__':
         )
 
         saliency_estimator.to(device)
-        saliency_maps = saliency_estimator.estimate_saliency_map()
-        show_saliency(saliency_maps)
+        if use_saliency:
+            saliency_maps = saliency_estimator.estimate_saliency_map()
+            show_saliency(saliency_maps, logger, mesh_name)
+        else:
+            saliency_maps = None
 
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha,
                              mesh_name=mesh_name, saliency_maps=saliency_maps)
@@ -171,7 +177,7 @@ if __name__ == '__main__':
         pl.Trainer()
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=3,
+            max_epochs=50,
             weights_summary=None,
             accumulate_grad_batches=data_module.number_of_batches,
             # progress_bar_refresh_rate=0,
@@ -199,19 +205,22 @@ if __name__ == '__main__':
             attacked_mesh_descriptor.replace_texture(mat_name, "albedo", torch.flipud(new_tex))
 
         if test_on_unity:
-            # save the attacked mesh as a zip file
-            attacked_zip_path = attacked_mesh_descriptor.save_to_zip()
-
-
             # prepare rendering on SAILenv
 
             noattack_accuracy = sailenv_noattack_evaluator.evaluate(logger).item()
             print(f"Accuracy on SAILenv before attack: {noattack_accuracy * 100}%")
 
-            sailenv_attack_evaluator = SailenvModule(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier, render_module)
-            attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
-
             sailenv_noattack_evaluator.despawn_obj()
+            # save the attacked mesh as a zip file
+            attacked_zip_path = attacked_mesh_descriptor.save_to_zip()
+
+            sailenv_attack_evaluator = SailenvModule(agent, attacked_zip_path, f"{mesh_name}/attacked_sailenv", data_module, classifier, render_module)
+
+            sailenv_attack_evaluator.spawn_obj()
+            attack_accuracy = sailenv_attack_evaluator.evaluate(logger).item()
+            sailenv_attack_evaluator.despawn_obj()
+
+
 
             del sailenv_attack_evaluator
             del sailenv_noattack_evaluator

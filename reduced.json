@@ -1,7 +1,7 @@
-{   
-    "alarm_clock": {
-        "path": "./meshes/alarm_clock",
-        "distance": 0.2,
-        "target_class": 530
+{
+    "table_living_room": {
+        "path": "./meshes/table_living_room",
+        "distance": 2.0,
+        "target_class": 532
     }
 }

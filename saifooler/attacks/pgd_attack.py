@@ -24,7 +24,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 "params": param,
                 "name": f"texture {idx}",
                 "src_tex": src_texture,
-                "saliency_map": saliency_map,
+                "saliency_map": saliency_map.unsqueeze(0).unsqueeze(3),
                 "eps": epsilon,
                 "alpha": alpha
             }
@@ -51,7 +51,7 @@ class PGDOptimizer(torch.optim.Optimizer):
             eps = group["eps"]
             alpha = group["alpha"]
             src_tex = group["src_tex"]
-            saliency_map = group["saliency_map"].unsqueeze(0).unsqueeze(3)
+            saliency_map = group["saliency_map"]
 
             for param in group["params"]:
                 if param.grad is None:

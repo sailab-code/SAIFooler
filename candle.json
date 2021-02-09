@@ -1,0 +1,11 @@
+{
+  "candle": {
+    "path": "./meshes/candle",
+    "distance": 0.2,
+    "target_class": 470,
+    "orientation_elev_range": [
+      -13,
+      52
+    ]
+  }
+}

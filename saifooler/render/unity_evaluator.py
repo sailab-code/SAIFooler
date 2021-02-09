@@ -69,7 +69,7 @@ class SailenvModule(pl.LightningModule):
         # we also need to divide by 255 because opencv returns it on range 0..255
         frame = frame[:, :, [2, 1, 0]] / 255.
 
-        return torch.fliplr(frame).clone().unsqueeze(0)
+        return torch.fliplr(frame).clone().unsqueeze(0).to(self.classifier.device)
 
     def evaluate(self, logger=None):
 
@@ -81,7 +81,7 @@ class SailenvModule(pl.LightningModule):
                 lights_azim, lights_elev = render_input[3:]
                 self.set_lights_direction(lights_azim, lights_elev)
                 image = self.render()
-                images.append(image.to(self.classifier.device))
+                images.append(image)
 
             images = torch.cat(images)
             class_tensor = self.classifier.classify(images)
