@@ -61,7 +61,7 @@ def view_model(_viewer, _views_module):
         _viewer.textures()
 
 
-def show_saliency(saliency_maps, logger, mesh_name):
+def show_saliency(saliency_maps, logger, mesh_name, postfix=""):
     heatmaps = greyscale_heatmap(saliency_maps.unsqueeze(0).unsqueeze(3))  # NxWxHx1 between 0..1
 
     red_heatmap = torch.zeros((*heatmaps.shape[1:-1], 3))
@@ -77,7 +77,7 @@ def show_saliency(saliency_maps, logger, mesh_name):
     blended = brightness_enhance.enhance(3.5)
 
     blended = TF.pil_to_tensor(blended).to(dtype=torch.float32) / 255
-    logger.experiment.add_image(f"{mesh_name}/saliency", blended)
+    logger.experiment.add_image(f"{mesh_name}/saliency_{postfix}", blended)
 
 
 if __name__ == '__main__':
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     with open(meshes_json_path) as meshes_file:
         meshes_def = json.load(meshes_file)
 
-    logger = TensorBoardLogger("./logs/pgd")
+    logger = TensorBoardLogger("./logs/pgd_imagewise_saliency")
 
     use_saliency = args.saliency
 
@@ -139,7 +139,9 @@ if __name__ == '__main__':
             orientation_elev_range=orientation_elev_range,
             orientation_elev_steps=6,
             orientation_azim_steps=15,
-            light_azim_steps=3,
+            light_azim_range=(0., 0.),
+            light_azim_steps=1,
+            light_elev_range=(70., 90.),
             light_elev_steps=3,
             batch_size=30)
 
@@ -165,19 +167,25 @@ if __name__ == '__main__':
 
         saliency_estimator.to(device)
         if use_saliency:
-            saliency_maps = saliency_estimator.estimate_saliency_map()
-            show_saliency(saliency_maps, logger, mesh_name)
+            #saliency_maps = saliency_estimator.estimate_saliency_map()
+            saliency_maps = saliency_estimator.estimate_view_saliency_map()
+            # show_saliency(saliency_maps[0].mean(dim=0), logger, mesh_name, "pytorch")
+            if len(saliency_maps) != 1:
+                # show_saliency(saliency_maps[1].mean(dim=0), logger, mesh_name, "sailenv")
+                # show_saliency(saliency_maps[0].mean(dim=0) * saliency_maps[1].mean(dim=0), logger, mesh_name, "product")
+                # show_saliency((saliency_maps[0].mean(dim=0) + saliency_maps[1].mean(dim=0))/2., logger, mesh_name, "mean")
+                saliency_product = saliency_maps[0] * saliency_maps[1]
         else:
             saliency_maps = None
 
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha,
-                             mesh_name=mesh_name, saliency_maps=saliency_maps)
+                             mesh_name=mesh_name, saliency_maps=None)
         attacker.to(device)
 
         pl.Trainer()
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=50,
+            max_epochs=10,
             weights_summary=None,
             accumulate_grad_batches=data_module.number_of_batches,
             # progress_bar_refresh_rate=0,
@@ -199,7 +207,7 @@ if __name__ == '__main__':
         #trainer.logger.experiment.add_image(f"{mesh_name}/pytorch3d_attacked", post_attack_grid.permute((2, 0, 1)))
 
 
-        attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"./meshes/attacks/{mesh_name}_attacked", overwrite=True)
+        attacked_mesh_descriptor = mesh_descriptor.copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked", overwrite=True)
 
         for mat_name, new_tex in attacker.get_textures().items():
             attacked_mesh_descriptor.replace_texture(mat_name, "albedo", torch.flipud(new_tex))

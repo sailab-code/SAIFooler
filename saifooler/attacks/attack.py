@@ -166,6 +166,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.to('cpu')
         super().cpu()
 
+    def register_hooks(self, images, batch_idx):
+        pass
+
     def handle_batch(self, batch, batch_idx):
         """
         N batch size, WxH view size
@@ -175,6 +178,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         """
         render_inputs, targets = batch
         images, view2tex_maps = self.render_batch(render_inputs)
+
+        if not self.trainer.testing:
+            self.register_hooks(images, batch_idx)
 
         images_grid = Viewer3D.make_grid(images)
         self.logger.experiment.add_image(f"{self.mesh_name}/pytorch3d_batch{batch_idx}",

@@ -8,9 +8,10 @@ from torch.nn import CrossEntropyLoss
 from saifooler.attacks.attack import SaifoolerAttack
 from saifooler.viewers.viewer import Viewer3D
 
+import traceback
 
 class PGDOptimizer(torch.optim.Optimizer):
-    def __init__(self, params, alpha, epsilon, src_texture, saliency_map=None):
+    def __init__(self, params, alpha, epsilon, src_texture):
 
         if alpha < 0.:
             raise ValueError("alpha must be a non-negative value")
@@ -24,7 +25,6 @@ class PGDOptimizer(torch.optim.Optimizer):
                 "params": param,
                 "name": f"texture {idx}",
                 "src_tex": src_texture,
-                "saliency_map": saliency_map.unsqueeze(0).unsqueeze(3),
                 "eps": epsilon,
                 "alpha": alpha
             }
@@ -51,7 +51,6 @@ class PGDOptimizer(torch.optim.Optimizer):
             eps = group["eps"]
             alpha = group["alpha"]
             src_tex = group["src_tex"]
-            saliency_map = group["saliency_map"]
 
             for param in group["params"]:
                 if param.grad is None:
@@ -60,7 +59,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 p_grad = param.grad
                 p_data = param.data.clone()
                 # p_data += alpha * p_grad / self._norms(p_grad)
-                p_data += alpha * p_grad.sign() * saliency_map
+                p_data += alpha * p_grad.sign()
 
                 # clip src_tex + param between [0,1]
                 p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
@@ -77,5 +76,34 @@ class PGDAttack(SaifoolerAttack):
         super().__init__(mesh, render_module, classifier, epsilon, *args, **kwargs)
         self.alpha = alpha
 
+    def saliency_hook(self, grad: torch.Tensor, offset):
+        try:
+            if self.saliency_maps is None:
+                return grad
+
+            n = grad.norm()
+            s = self.saliency_maps[offset:offset+grad.shape[0]]
+            grad = grad * s
+
+            grad = grad / grad.norm() * n
+
+            return grad
+        except Exception:
+            print("errore")
+            traceback.print_exc()
+
+    def __generate_saliency_hook(self, offset):
+        f = self.saliency_hook
+
+        def hook(grad):
+            return f(grad, offset)
+
+        return hook
+
+    def register_hooks(self, images, batch_idx):
+        offset = batch_idx * images.shape[0]  # assume all batches have same shape
+
+        images.register_hook(self.__generate_saliency_hook(offset))
+
     def configure_optimizers(self):
-        return PGDOptimizer(self.parameters(), self.alpha, self.epsilon, self.src_texture, self.saliency_maps)
+        return PGDOptimizer(self.parameters(), self.alpha, self.epsilon, self.src_texture)
