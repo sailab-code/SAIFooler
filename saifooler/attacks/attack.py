@@ -20,7 +20,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         pass
 
     def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon,
-                 mesh_name="", saliency_maps=None, *args, **kwargs):
+                 mesh_name="", saliency_maps=None, saliency_threshold=0., *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if isinstance(mesh, Meshes):
@@ -41,7 +41,15 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         )
         self.register_parameter("delta", self.delta)
 
-        self.saliency_maps = saliency_maps
+        if saliency_maps is not None:
+            self.saliency_threshold = saliency_threshold
+            saliency_maps = saliency_maps.clone()
+            # rescale saliency maps to 0..1 range
+            saliency_maps = (saliency_maps - saliency_maps.min()) / (saliency_maps.max() - saliency_maps.min())
+            saliency_maps[saliency_maps < saliency_threshold] = 0.
+            self.saliency_maps = saliency_maps
+        else:
+            self.saliency_maps = None
 
         # call update_textures to set the parameter as texture
         # or else it will not use it at first epoch
