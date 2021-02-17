@@ -89,7 +89,7 @@ class PGDAttack(SaifoolerAttack):
 
             return grad
         except Exception:
-            print("errore")
+            print("error")
             traceback.print_exc()
 
     def __generate_saliency_hook(self, offset):
