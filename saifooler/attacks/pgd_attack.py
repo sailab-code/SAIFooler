@@ -64,7 +64,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 # clip src_tex + param between [0,1]
                 p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
 
-                p_data *= eps / self._norms(p_data).clamp(min=eps)
+                p_data *= eps / p_data.norm().clamp(min=eps)
 
                 param.data = p_data
 
