@@ -17,9 +17,10 @@ from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from saifooler.render.unity_evaluator import SailenvModule
 
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from saifooler.saliency.saliency_estimator import SaliencyEstimator
-from saifooler.utils import greyscale_heatmap
+from saifooler.utils import greyscale_heatmap, StopOnNullAccuracy
 import torchvision.transforms.functional as TF
 from PIL import Image, ImageEnhance
 import matplotlib.pyplot as plt
@@ -134,16 +135,30 @@ if __name__ == '__main__':
 
         mesh_descriptor = MeshDescriptor(mesh_path)
 
-        data_module = MultipleViewModule(
-            target_class, distance,
-            orientation_elev_range=orientation_elev_range,
-            orientation_elev_steps=6,
-            orientation_azim_steps=15,
-            light_azim_range=(0., 0.),
-            light_azim_steps=1,
-            light_elev_range=(70., 90.),
-            light_elev_steps=3,
-            batch_size=30)
+        switch_testdata = False
+
+        if switch_testdata:
+            data_module = MultipleViewModule(
+                target_class, distance,
+                orientation_elev_range=orientation_elev_range,
+                orientation_elev_steps=6,
+                orientation_azim_steps=5,
+                light_azim_range=(0., 0.),
+                light_azim_steps=1,
+                light_elev_range=(70., 90.),
+                light_elev_steps=1,
+                batch_size=30)
+        else:
+            data_module = MultipleViewModule(
+                target_class, distance,
+                orientation_elev_range=orientation_elev_range,
+                orientation_elev_steps=6,
+                orientation_azim_steps=15,
+                light_azim_range=(0., 0.),
+                light_azim_steps=1,
+                light_elev_range=(70., 90.),
+                light_elev_steps=3,
+                batch_size=30)
 
         data_module.setup()
 
@@ -176,16 +191,15 @@ if __name__ == '__main__':
                 # show_saliency((saliency_maps[0].mean(dim=0) + saliency_maps[1].mean(dim=0))/2., logger, mesh_name, "mean")
                 saliency_product = saliency_maps[0] * saliency_maps[1]
         else:
-            saliency_maps = None
+            saliency_maps = [None, None]
 
         attacker = PGDAttack(mesh_descriptor.mesh, render_module, classifier, epsilon, alpha,
-                             mesh_name=mesh_name, saliency_maps=None)
+                             mesh_name=mesh_name, saliency_maps=saliency_maps[1], saliency_threshold=0.02)
         attacker.to(device)
 
-        pl.Trainer()
         trainer = pl.Trainer(
             num_sanity_val_steps=0,
-            max_epochs=10,
+            max_epochs=50,
             weights_summary=None,
             accumulate_grad_batches=data_module.number_of_batches,
             # progress_bar_refresh_rate=0,
