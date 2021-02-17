@@ -105,11 +105,25 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         acc = accuracy.compute()
         self.accuracies[f"{phase}_accuracy"] = acc
         self.log(f"{self.mesh_name}/{phase}_accuracy", acc, prog_bar=True)
-        self.print(f'{phase.capitalize()} accuracy: {correct}/{total} = {acc}')
 
         if self.current_epoch == 0 and phase == 'train':
             # save the accuracy before attack
             self.accuracies["before_attack"] = acc
+
+    def __log_textures(self):
+        for tex_name, tex in self.get_textures().items():
+            self.logger.experiment.add_image(f"{self.mesh_name}/textures/{tex_name}", tex.permute(2, 0, 1),
+                                             global_step=self.current_epoch)
+
+    def __log_delta(self):
+        self.logger.experiment.add_image(f"{self.mesh_name}/delta", self.delta.squeeze(0).permute(2, 0, 1),
+                                         global_step=self.current_epoch)
+
+    def __log_delta_measure(self):
+        delta_norm = self.delta.norm()
+        self.log(f"{self.mesh_name}/delta_norm", delta_norm, prog_bar=False)
+        delta_n_pixels = (self.delta != 0.).sum().to(dtype=torch.float32) / self.delta.numel()
+        self.log(f"{self.mesh_name}/delta_n_pixels", delta_n_pixels, prog_bar=False)
 
     def on_train_epoch_start(self):
         self.train_accuracy.reset()
@@ -120,13 +134,17 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         return total_loss
 
     def on_train_batch_end(self, outputs, batch, batch_idx, dataloader_idx):
-        self.update_textures()
-        for tex_name, tex in self.get_textures().items():
-            self.logger.experiment.add_image(f"{self.mesh_name}/textures/{tex_name}", tex.permute(2, 0, 1),
-                                             global_step=self.current_epoch)
+        pass
 
     def on_train_epoch_end(self, outputs):
+        self.update_textures()
         self.__log_accuracy(self.train_accuracy, "train")
+        self.__log_textures()
+        self.__log_delta()
+        self.__log_delta_measure()
+
+        if self.train_accuracy.compute() == 0.:
+            self.trainer.should_stop = True
 
     def on_validation_epoch_start(self) -> None:
         self.valid_accuracy.reset()
