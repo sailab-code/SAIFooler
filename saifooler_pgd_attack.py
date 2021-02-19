@@ -38,7 +38,7 @@ parser.add_argument('--eps', metavar="epsilon", type=float,
 parser.add_argument('--alpha', metavar="alpha", type=float,
                     required=True,
                     help="Alpha of the PGD attack")
-parser.add_argument('--saliency', metavar='saliency', action="store_true",
+parser.add_argument('--saliency', action="store_true",
                     help="Wheter to use saliency for attack")
 parser.add_argument('--classifier', metavar="classifier", type=str,
                     required=True,
@@ -195,7 +195,7 @@ if __name__ == '__main__':
             )
             plot.set(ylim=(0., 1.))
             fig = plot.get_figure()
-            logger.experiment.add_figure(f"{mesh_name}/summary", fig)
+            logger.experiment.add_figure(f"{mesh_name}_attacked/summary", fig)
 
             with open(f"{logger.log_dir}/summary.json", "w+") as f:
                 json.dump(metrics, f, indent=4)
