@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 import torch
 from tqdm import tqdm
 
+from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.viewers.viewer import Viewer3D
 
 
@@ -13,33 +14,24 @@ class SailenvModule(pl.LightningModule):
     def _forward_unimplemented(self, *input: Any) -> None:
         pass
 
-    def __init__(self, agent: Agent, obj_zip,
-                 mesh_name: str,
-                 data_module: pl.LightningDataModule,
-                 classifier,
-                 render_module,
+    def __init__(self, agent: Agent,
+                 lights: DirectionalLights,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.agent = agent
-        self.obj_zip = obj_zip
+        self.agent: Agent = agent
+        self.set_unity_lights(lights)
         self.obj_id = None
-        self.data_module = data_module
-        self.accuracy = pl.metrics.Accuracy()
-        self.classifier = classifier
-        self.mesh_name = mesh_name
 
-        self.p3d_lights: DirectionalLights = render_module.lights
-        self.set_unity_lights()
-
-    def set_unity_lights(self):
-        main_r, main_g, main_b = (self.p3d_lights.diffuse_color[0] * 255).to(dtype=torch.uint8)
-        rim_r, rim_g, rim_b = (self.p3d_lights.ambient_color[0] * 255).to(dtype=torch.uint8)
+    def set_unity_lights(self, lights):
+        main_r, main_g, main_b = (lights.diffuse_color[0] * 255).to(dtype=torch.uint8)
+        rim_r, rim_g, rim_b = (lights.ambient_color[0] * 255).to(dtype=torch.uint8)
 
         self.agent.set_light_color("Main Light", main_r, main_g, main_b)
         self.agent.set_light_color("Rim Light", rim_r, rim_g, rim_b)
 
-    def spawn_obj(self):
-        remote_zip = self.agent.send_obj_zip(self.obj_zip)
+    def spawn_obj(self, mesh_descriptor):
+        obj_zip = mesh_descriptor.save_to_zip()
+        remote_zip = self.agent.send_obj_zip(obj_zip)
         self.obj_id = self.agent.spawn_object(f"file:{remote_zip}")
 
     def despawn_obj(self):
@@ -69,27 +61,15 @@ class SailenvModule(pl.LightningModule):
         # we also need to divide by 255 because opencv returns it on range 0..255
         frame = frame[:, :, [2, 1, 0]] / 255.
 
-        return torch.fliplr(frame).clone().unsqueeze(0).to(self.classifier.device)
+        return torch.fliplr(frame).clone().unsqueeze(0).to(self.device)
 
-    def evaluate(self, logger=None):
+    def to(self, device):
+        super().to(device)
 
-        for batch_render_inputs, batch_targets in tqdm(self.data_module.test_dataloader(), desc="Batch"):
-            images = []
-            for render_input, target in zip(batch_render_inputs, batch_targets):
-                distance, camera_azim, camera_elev = render_input[:3]
-                self.look_at_mesh(distance, camera_azim, camera_elev)
-                lights_azim, lights_elev = render_input[3:]
-                self.set_lights_direction(lights_azim, lights_elev)
-                image = self.render()
-                images.append(image)
+    def cuda(self, device=None):
+        super().cuda(device)
+        self.to(device)
 
-            images = torch.cat(images)
-            class_tensor = self.classifier.classify(images)
-            _, classes_predicted = class_tensor.max(1, keepdim=True)
-            self.accuracy(classes_predicted, batch_targets)
-
-        if logger is not None:
-            images_grid = Viewer3D.make_grid(images)
-            logger.experiment.add_image(self.mesh_name, images_grid.permute((2, 0, 1)))
-
-        return self.accuracy.compute()
+    def cpu(self):
+        super().cpu()
+        self.to('cpu')

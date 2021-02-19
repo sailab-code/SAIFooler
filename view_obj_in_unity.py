@@ -14,7 +14,7 @@ from sailenv.agent import Agent
 import matplotlib.pyplot as plt
 import cv2
 
-from saifooler.render.unity_evaluator import SailenvModule
+from saifooler.render.sailenv_module import SailenvModule
 from saifooler.viewers.viewer import Viewer3D
 
 use_cuda = False

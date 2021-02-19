@@ -6,6 +6,7 @@ from pytorch3d.structures import Meshes
 from torch.nn import CrossEntropyLoss
 
 from saifooler.attacks.attack import SaifoolerAttack
+from saifooler.render.mesh_descriptor import MeshDescriptor
 from saifooler.viewers.viewer import Viewer3D
 
 import traceback
@@ -72,8 +73,8 @@ class PGDOptimizer(torch.optim.Optimizer):
 
 
 class PGDAttack(SaifoolerAttack):
-    def __init__(self, mesh: Union[str, Meshes], render_module, classifier, epsilon, alpha, *args, **kwargs):
-        super().__init__(mesh, render_module, classifier, epsilon, *args, **kwargs)
+    def __init__(self, mesh_descriptor: MeshDescriptor, pytorch3d_module, sailenv_module, classifier, epsilon, alpha, *args, **kwargs):
+        super().__init__(mesh_descriptor, pytorch3d_module, sailenv_module, classifier, epsilon, *args, **kwargs)
         self.alpha = alpha
 
     def saliency_hook(self, grad: torch.Tensor, offset):

@@ -1,12 +1,16 @@
 import torch
 from tqdm import tqdm
 
+from saifooler.render.sailenv_module import SailenvModule
+
+
 class SaliencyEstimator:
-    def __init__(self, mesh, classifier, p3d_module, unity_module, data_module, use_cache=False):
-        self.mesh = mesh
+    def __init__(self, mesh_descriptor, classifier, p3d_module, sailenv_module, data_module, use_cache=False):
+        self.mesh_descriptor = mesh_descriptor
+        self.mesh = self.mesh_descriptor.mesh
         self.classifier = classifier
         self.p3d_module = p3d_module
-        self.unity_module = unity_module
+        self.sailenv_module: SailenvModule = sailenv_module
         self.data_module = data_module
         self.use_cache = use_cache
         self.device = self.classifier.device
@@ -52,10 +56,12 @@ class SaliencyEstimator:
         return images, view2tex_maps
 
     def estimate_view_saliency_map(self):
+        self.sailenv_module.spawn_obj(self.mesh_descriptor)
+
         view_saliencies = [[], []]
 
         view2tex_maps = None
-        for idx, render_module in tqdm(enumerate([self.p3d_module, self.unity_module]), position=0, desc="Module"):
+        for idx, render_module in tqdm(enumerate([self.p3d_module, self.sailenv_module]), position=0, desc="Module"):
             if render_module is None:
                 del view_saliencies[idx]  # if unity module is not provided, just skip it
                 continue
@@ -66,16 +72,17 @@ class SaliencyEstimator:
 
             view_saliencies[idx] = torch.cat(view_saliencies[idx], 0)
 
-        # saliency_map = sum(view_saliencies) / len(view_saliencies)
-        # saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
+        self.sailenv_module.despawn_obj()
+
         return view_saliencies
 
-
     def estimate_saliency_map(self):
+        self.sailenv_module.spawn_obj(self.mesh_descriptor)
+
         tex_saliencies = [[], []]
 
         view2tex_maps = None
-        for idx, render_module in tqdm(enumerate([self.p3d_module, self.unity_module]), position=0, desc="Module"):
+        for idx, render_module in tqdm(enumerate([self.p3d_module, self.sailenv_module]), position=0, desc="Module"):
             if render_module is None:
                 del tex_saliencies[idx]  # if unity module is not provided, just skip it
                 continue
@@ -87,8 +94,7 @@ class SaliencyEstimator:
 
             tex_saliencies[idx] = torch.cat(tex_saliencies[idx], 0)
 
-        # saliency_map = sum(tex_saliencies) / len(tex_saliencies)
-        #saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
+        self.sailenv_module.despawn_obj()
         return tex_saliencies
 
     def to(self, device):

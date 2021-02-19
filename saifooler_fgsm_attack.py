@@ -13,7 +13,7 @@ from saifooler.render.render_module import RenderModule
 from saifooler.attacks.fgsm_attack import FGSMAttack
 from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
-from saifooler.render.unity_evaluator import SailenvModule
+from saifooler.render.sailenv_module import SailenvModule
 
 from pytorch_lightning.loggers import TensorBoardLogger
 
