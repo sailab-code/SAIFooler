@@ -17,7 +17,7 @@ from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from saifooler.render.sailenv_module import SailenvModule
 
 from pytorch_lightning.loggers import TensorBoardLogger
-from torch.utils.tensorboard import SummaryWriter
+from saifooler.utils import SummaryWriter
 from saifooler.saliency.saliency_estimator import SaliencyEstimator
 # from saifooler.utils import greyscale_heatmap
 # import torchvision.transforms.functional as TF
