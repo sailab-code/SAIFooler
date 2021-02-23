@@ -197,6 +197,7 @@ if __name__ == '__main__':
             fig = plot.get_figure()
             logger.experiment.add_figure(f"{mesh_name}_attacked/summary", fig)
 
+
             with open(f"{logger.log_dir}/summary.json", "w+") as f:
                 json.dump(metrics, f, indent=4)
 
