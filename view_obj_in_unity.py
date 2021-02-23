@@ -23,7 +23,7 @@ model_name = "inception"
 #model_name = "mobilenet"
 
 
-mesh_path = "./meshes/table_living_room_attacked"
+mesh_path = "./meshes/table_living_room"
 
 target_class = 532
 epsilon = 0.66
@@ -39,6 +39,7 @@ def view_model(viewer_):
         viewer_.textures()
 
 host = "127.0.0.1"
+#host = "kronos.diism.unisi.it"
 
 if __name__ == '__main__':
     print("CUDA Available: ", torch.cuda.is_available())
@@ -67,19 +68,21 @@ if __name__ == '__main__':
         agent.register()
         agent.change_main_camera_clear_flags(255, 255, 255)
         agent.change_scene("object_view/scene")
-        unity_render = SailenvModule(agent, "./meshes/table_living_room_attacked/table_living_room_attacked.zip")
+        unity_render = SailenvModule(agent, render_module.lights)
         unity_render.look_at_mesh(2., 10., 30.)
-        unity_render.spawn_obj()
+        unity_render.spawn_obj(mesh_object)
         main_img = unity_render.render()
 
         plt.figure(figsize=(7,7))
-        plt.imshow(main_img)
+        plt.imshow(main_img.squeeze(0))
         plt.title("unity")
         plt.show()
 
         plt.figure(figsize=(7,7))
         render_module.look_at_mesh(2., 10., 30.)
-        plt.imshow(render_module.render(mesh_object.mesh))
+        img = render_module.render(mesh_object.mesh)
+        img = img.squeeze(0)
+        plt.imshow(img)
         plt.title("pytorch")
         plt.show()
     finally:
