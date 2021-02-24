@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     # hyperparams
 
-    EPS = [0.1, 5, 20, 30, 50]
+    EPS = [5, 20, 30, 50]
     ALPHA = [0.001, 0.01, 0.1, 1.0]
     CLASSIFIER = ["inception", "mobilenet"]
     SALIENCY = [True, False]
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     for eps_, alpha_, classifier_, saliency_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY,
                                                         ):
 
-        exp_name = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}"
+        exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}"
 
         params_dict = {"eps": eps_,
                        "alpha": alpha_,
@@ -107,8 +107,10 @@ if __name__ == '__main__':
         for s_th_ in saliency_thresh_:
 
             if saliency_:
-                exp_name += f"_saliency_thresh_{s_th_}"
+                exp_name = exp_name_base + f"_saliency_thresh_{s_th_}"
                 params_dict["saliency_theshold"] = s_th_
+            else:
+                exp_name = exp_name_base
 
             model_name = classifier_
             if model_name == "inception":
@@ -123,9 +125,8 @@ if __name__ == '__main__':
             with open(meshes_json_path) as meshes_file:
                 meshes_def = json.load(meshes_file)
 
-            log_folder = os.path.join("logs", "pgd", exp_name)
+            log_folder = os.path.join("logs_24_02", "pgd", exp_name)
             logger = TensorBoardLogger(log_folder)
-
 
             use_saliency = saliency_
 
@@ -219,6 +220,9 @@ if __name__ == '__main__':
                         "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_test_accuracy"]
                     }
 
+                    with SummaryWriter(logger.log_dir) as w:
+                        w.add_hparams(params_dict, metrics)
+
                     plot = sns.barplot(
                         x=list(metrics.keys()),
                         y=list(metrics.values())
@@ -235,10 +239,9 @@ if __name__ == '__main__':
                         "\n\n".join([f"**{key}**: {value:.2f}" for key, value in metrics.items()])
                     )
 
-                    #logger.experiment.add_hparams(params_dict, metrics)
+                    # logger.experiment.add_hparams(params_dict, metrics)
                     # log to Tensorboard HParams
-                    with SummaryWriter(logger.log_dir) as w:
-                        w.add_hparams(params_dict, metrics)
+
 
                     logger.experiment.flush()
 

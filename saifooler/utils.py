@@ -13,15 +13,23 @@ def greyscale_heatmap(images):
     return images / images.max(1, keepdim=True)[0].max(2, keepdim=True)[0]
 
 
+
+
 class SummaryWriter(SummaryWriter):
-    def add_hparams(self, hparam_dict, metric_dict):
+    def add_hparams(self, hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None):
         torch._C._log_api_usage_once("tensorboard.logging.add_hparams")
         if type(hparam_dict) is not dict or type(metric_dict) is not dict:
             raise TypeError('hparam_dict and metric_dict should be dictionary.')
-        exp, ssi, sei = hparams(hparam_dict, metric_dict)
+        exp, ssi, sei = hparams(hparam_dict, metric_dict, hparam_domain_discrete)
 
         logdir = self._get_file_writer().get_logdir()
 
+        # import os
+        # if not run_name:
+        #     import time
+        #
+        #     run_name = str(time.time())
+        # logdir = os.path.join(self._get_file_writer().get_logdir(), run_name)
         with SummaryWriter(log_dir=logdir) as w_hp:
             w_hp.file_writer.add_summary(exp)
             w_hp.file_writer.add_summary(ssi)
