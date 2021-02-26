@@ -1,4 +1,5 @@
 import json
+import os
 
 import torch
 import pytorch_lightning as pl
@@ -19,7 +20,8 @@ from saifooler.render.sailenv_module import SailenvModule
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from saifooler.saliency.saliency_estimator import SaliencyEstimator
-from saifooler.utils import greyscale_heatmap
+from saifooler.utils import greyscale_heatmap, SummaryWriter
+from operator import itemgetter
 import torchvision.transforms.functional as TF
 from PIL import Image, ImageEnhance
 import matplotlib.pyplot as plt
@@ -40,6 +42,8 @@ parser.add_argument('--alpha', metavar="alpha", type=float,
                     help="Alpha of the PGD attack")
 parser.add_argument('--saliency', action="store_true",
                     help="Wheter to use saliency for attack")
+parser.add_argument('--saliency-threshold', metavar="alpha", type=float,
+                    default=0.02, help="Threshold for constructing saliency map")
 parser.add_argument('--classifier', metavar="classifier", type=str,
                     required=True,
                     help="The classifier to be attacked. Choose between inception and mobilenet.")
@@ -72,14 +76,13 @@ def generate_agent(args):
     return agent
 
 
-if __name__ == '__main__':
-    args = parser.parse_args()
 
-    dev, use_cuda = args.device, args.cuda
-    print("CUDA Available: ", torch.cuda.is_available())
-    device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
+def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
-    model_name = args.classifier
+    eps, alpha, model_name, use_saliency = itemgetter('eps', 'alpha', 'model', 'saliency')(params_dict)
+
+    saliency_threshold = params_dict['saliency_threshold'] if use_saliency else -1
+
     if model_name == "inception":
         used_model = models.inception_v3(pretrained=True).to(device)
     elif model_name == "mobilenet":
@@ -87,17 +90,12 @@ if __name__ == '__main__':
     else:
         sys.exit("Wrong model!")
 
-    epsilon = args.eps
-    alpha = args.alpha
-
     meshes_json_path = args.meshes_definition
 
     with open(meshes_json_path) as meshes_file:
         meshes_def = json.load(meshes_file)
 
-    logger = TensorBoardLogger("./logs/pgd_imagewise_saliency")
-
-    use_saliency = args.saliency
+    logger = TensorBoardLogger(log_dir)
 
     agent = generate_agent(args)
     try:
@@ -112,8 +110,6 @@ if __name__ == '__main__':
 
             mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
                                                                     overwrite=True)
-
-            switch_testdata = False
 
             if switch_testdata:
                 data_module = MultipleViewModule(
@@ -154,8 +150,8 @@ if __name__ == '__main__':
             else:
                 view_saliency_maps = [None, None]
 
-            attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, epsilon, alpha,
-                                 saliency_maps=view_saliency_maps[1], saliency_threshold=0.02)
+            attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, eps, alpha,
+                                 saliency_maps=view_saliency_maps[1], saliency_threshold=saliency_threshold)
 
             attacker.to(device)
 
@@ -189,6 +185,9 @@ if __name__ == '__main__':
                 "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_test_accuracy"]
             }
 
+            with SummaryWriter(logger.log_dir) as w:
+                w.add_hparams(params_dict, metrics)
+
             plot = sns.barplot(
                 x=list(metrics.keys()),
                 y=list(metrics.values())
@@ -197,7 +196,6 @@ if __name__ == '__main__':
             fig = plot.get_figure()
             logger.experiment.add_figure(f"{mesh_name}_attacked/summary", fig)
 
-
             with open(f"{logger.log_dir}/summary.json", "w+") as f:
                 json.dump(metrics, f, indent=4)
 
@@ -205,6 +203,9 @@ if __name__ == '__main__':
                 "summary",
                 "\n\n".join([f"**{key}**: {value:.2f}" for key, value in metrics.items()])
             )
+
+            # logger.experiment.add_hparams(params_dict, metrics)
+            # log to Tensorboard HParams
 
             logger.experiment.flush()
 
@@ -218,3 +219,35 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
     finally:
         agent.delete()
+        print(f"Experiment {exp_name} completed! \n\n\n")
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
+    dev, use_cuda = args.device, args.cuda
+    print("CUDA Available: ", torch.cuda.is_available())
+    device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
+
+    model_name = args.classifier
+    epsilon = args.eps
+    alpha = args.alpha
+
+    meshes_json_path = args.meshes_definition
+
+    with open(meshes_json_path) as meshes_file:
+        meshes_def = json.load(meshes_file)
+
+    use_saliency = args.saliency
+    saliency_threshold = args.saliency_threshold
+
+    params_dict = {
+        "eps": epsilon,
+        "alpha": alpha,
+        "model": model_name,
+        "saliency": use_saliency
+    }
+
+    if use_saliency:
+        params_dict["saliency_threshold"] = saliency_threshold
+
+    experiment("test", params_dict, switch_testdata=True)
