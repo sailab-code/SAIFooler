@@ -57,10 +57,6 @@ class SailenvModule(pl.LightningModule):
     def render(self, *_):
         frame = torch.tensor(self.agent.get_frame()["main"])
 
-        # sailenv return bgr (because opencv) so we need to permute channels
-        # we also need to divide by 255 because opencv returns it on range 0..255
-        #frame = frame[:, :, [2, 1, 0]] / 255.
-
         return torch.fliplr(frame).clone().unsqueeze(0).to(self.device)
 
     def to(self, device):
