@@ -43,10 +43,10 @@ class MultipleViewModule(pl.LightningDataModule):
         return self.total_steps // self.batch_size
 
     def setup(self, stage=None):
-        orientations_azim = torch.linspace(0., 360., self.orientation_azim_steps)
-        orientations_elev = torch.linspace(-90., 90., self.orientation_elev_steps)
-        lights_azim = torch.linspace(0, 360., self.light_azim_steps)
-        lights_elev = torch.linspace(0., 90., self.light_elev_steps)
+        orientations_azim = torch.linspace(*self.orientation_azim_range, self.orientation_azim_steps)
+        orientations_elev = torch.linspace(*self.orientation_elev_range, self.orientation_elev_steps)
+        lights_azim = torch.linspace(*self.light_azim_range, self.light_azim_steps)
+        lights_elev = torch.linspace(*self.light_elev_range, self.light_elev_steps)
         distance = torch.tensor([self.distance])
 
         inputs = torch.cartesian_prod(distance, orientations_azim, orientations_elev, lights_azim, lights_elev)
