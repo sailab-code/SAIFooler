@@ -65,7 +65,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 # clip src_tex + param between [0,1]
                 p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
 
-                p_data *= eps / p_data.norm().clamp(min=eps)
+                p_data *= eps / p_data.norm(float('inf')).clamp(min=eps)
 
                 param.data = p_data
 
@@ -73,8 +73,8 @@ class PGDOptimizer(torch.optim.Optimizer):
 
 
 class PGDAttack(SaifoolerAttack):
-    def __init__(self, mesh_descriptor: MeshDescriptor, pytorch3d_module, sailenv_module, classifier, epsilon, alpha, *args, **kwargs):
-        super().__init__(mesh_descriptor, pytorch3d_module, sailenv_module, classifier, epsilon, *args, **kwargs)
+    def __init__(self, mesh_descriptor: MeshDescriptor, pytorch3d_module, sailenv_module, classifier, epsilon, alpha, datamodule, *args, **kwargs):
+        super().__init__(mesh_descriptor, pytorch3d_module, sailenv_module, classifier, epsilon, datamodule, *args, **kwargs)
         self.alpha = alpha
 
     def saliency_hook(self, grad: torch.Tensor, offset):

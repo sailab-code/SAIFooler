@@ -95,7 +95,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
     with open(meshes_json_path) as meshes_file:
         meshes_def = json.load(meshes_file)
 
-    logger = TensorBoardLogger(log_dir)
+    logger = TensorBoardLogger(f"{log_dir}/{exp_name}")
 
     agent = generate_agent(args)
     try:
@@ -112,7 +112,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                                                                     overwrite=True)
 
             if switch_testdata:
-                data_module = MultipleViewModule(
+                datamodule = MultipleViewModule(
                     target_class, distance,
                     orientation_elev_range=orientation_elev_range,
                     orientation_elev_steps=6,
@@ -123,7 +123,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                     light_elev_steps=1,
                     batch_size=30)
             else:
-                data_module = MultipleViewModule(
+                datamodule = MultipleViewModule(
                     target_class, distance,
                     orientation_elev_range=orientation_elev_range,
                     orientation_elev_steps=6,
@@ -134,14 +134,14 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                     light_elev_steps=3,
                     batch_size=30)
 
-            data_module.setup()
+            datamodule.setup()
 
             saliency_estimator = SaliencyEstimator(
                 mesh_descriptor,
                 classifier,
                 render_module,
                 sailenv_module,
-                data_module
+                datamodule
             )
             saliency_estimator.to(device)
 
@@ -150,7 +150,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
             else:
                 view_saliency_maps = [None, None]
 
-            attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, eps, alpha,
+            attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, eps, alpha, datamodule,
                                  saliency_maps=view_saliency_maps[1], saliency_threshold=saliency_threshold)
 
             attacker.to(device)
@@ -159,7 +159,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                 num_sanity_val_steps=0,
                 max_epochs=100,
                 weights_summary=None,
-                accumulate_grad_batches=data_module.number_of_batches,
+                accumulate_grad_batches=datamodule.number_of_batches,
                 check_val_every_n_epoch=5,
                 # progress_bar_refresh_rate=0,
                 gpus=1,
@@ -167,13 +167,13 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
             )
 
             # test before attack
-            before_attack_results = trainer.test(attacker, datamodule=data_module)[0]
+            before_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
 
             print(f"Attack begin against {mesh_name}")
-            trainer.fit(attacker, datamodule=data_module)
+            trainer.fit(attacker, datamodule=datamodule)
 
             print("Testing")
-            after_attack_results = trainer.test(attacker, datamodule=data_module)[0]
+            after_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
 
             print(f"Attack end on {mesh_name}")
             attacker.to('cpu')
@@ -211,7 +211,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
             del attacker
             del trainer
-            del data_module
+            del datamodule
             del render_module
             del classifier
             del mesh_descriptor
