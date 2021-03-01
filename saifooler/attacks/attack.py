@@ -161,7 +161,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
                                          global_step=self.current_epoch)
 
     def __log_delta_measure(self):
-        delta_norm = self.delta.norm()
+        delta_norm = self.delta.norm(p=float('inf'))
         self.log(f"{self.mesh_name}/delta_norm", delta_norm, prog_bar=False)
         delta_n_pixels = (self.delta != 0.).sum().to(dtype=torch.float32) / self.delta.numel()
         self.log(f"{self.mesh_name}/delta_n_pixels", delta_n_pixels, prog_bar=False)
