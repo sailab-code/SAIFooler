@@ -1,4 +1,5 @@
 import abc
+import traceback
 from typing import Any, Union
 
 from PIL import Image, ImageEnhance
@@ -297,9 +298,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.to('cpu')
         super().cpu()
 
-    def register_hooks(self, images, batch_idx):
-        pass
-
     def handle_batch(self, batch, batch_idx, phase="train", module_name=PYTORCH3D_MODULE_NAME):
         """
         N batch size, WxH view size
@@ -333,6 +331,35 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         loss = loss_fn(class_tensors, loss_targets.squeeze(1))
 
         return loss, classes_predicted, targets, scores
+
+    def saliency_hook(self, grad: torch.Tensor, offset):
+        try:
+            if self.saliency_maps is None:
+                return grad
+
+            n = grad.norm()
+            s = self.saliency_maps[offset:offset+grad.shape[0]]
+            grad = grad * s
+
+            grad = grad / grad.norm() * n
+
+            return grad
+        except Exception:
+            print("error")
+            traceback.print_exc()
+
+    def __generate_saliency_hook(self, offset):
+        f = self.saliency_hook
+
+        def hook(grad):
+            return f(grad, offset)
+
+        return hook
+
+    def register_hooks(self, images, batch_idx):
+        offset = batch_idx * images.shape[0]  # assume all batches have same shape
+
+        images.register_hook(self.__generate_saliency_hook(offset))
 
     @abc.abstractmethod
     def configure_optimizers(self):

@@ -77,34 +77,5 @@ class PGDAttack(SaifoolerAttack):
         super().__init__(mesh_descriptor, pytorch3d_module, sailenv_module, classifier, epsilon, datamodule, *args, **kwargs)
         self.alpha = alpha
 
-    def saliency_hook(self, grad: torch.Tensor, offset):
-        try:
-            if self.saliency_maps is None:
-                return grad
-
-            n = grad.norm()
-            s = self.saliency_maps[offset:offset+grad.shape[0]]
-            grad = grad * s
-
-            grad = grad / grad.norm() * n
-
-            return grad
-        except Exception:
-            print("error")
-            traceback.print_exc()
-
-    def __generate_saliency_hook(self, offset):
-        f = self.saliency_hook
-
-        def hook(grad):
-            return f(grad, offset)
-
-        return hook
-
-    def register_hooks(self, images, batch_idx):
-        offset = batch_idx * images.shape[0]  # assume all batches have same shape
-
-        images.register_hook(self.__generate_saliency_hook(offset))
-
     def configure_optimizers(self):
         return PGDOptimizer(self.parameters(), self.alpha, self.epsilon, self.src_texture)
