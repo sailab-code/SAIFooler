@@ -3,6 +3,7 @@ import os
 
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sailenv.agent import Agent
 from torchvision import models
 import sys
@@ -155,6 +156,8 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
             attacker.to(device)
 
+            monitor_metric = f'{mesh_name}_attacked/validation_accuracy'
+
             trainer = pl.Trainer(
                 num_sanity_val_steps=0,
                 max_epochs=100,
@@ -163,6 +166,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                 check_val_every_n_epoch=5,
                 # progress_bar_refresh_rate=0,
                 gpus=1,
+                callbacks=[EarlyStopping(monitor=monitor_metric, patience=5), ModelCheckpoint(monitor=monitor_metric)],
                 logger=logger
             )
 
@@ -250,4 +254,4 @@ if __name__ == '__main__':
     if use_saliency:
         params_dict["saliency_threshold"] = saliency_threshold
 
-    experiment("test", params_dict, switch_testdata=True)
+    experiment("pgd_linf", params_dict, switch_testdata=False)
