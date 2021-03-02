@@ -39,7 +39,7 @@ class SailenvModule(pl.LightningModule):
 
     def look_at_mesh(self, distance, azimuth, elevation):
         position = camera_position_from_spherical_angles(distance, elevation, azimuth)
-        rotation = (180-elevation, azimuth, 180)
+        rotation = (180-elevation, azimuth if torch.abs(elevation) != 90. else 180 + azimuth, 180)
 
         self.agent.set_position(list(position.squeeze()))
         self.agent.set_rotation(rotation)
