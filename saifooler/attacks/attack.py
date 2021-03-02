@@ -158,7 +158,13 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
                                              global_step=self.current_epoch)
 
     def __log_delta(self):
-        self.logger.experiment.add_image(f"{self.mesh_name}/delta", self.delta.squeeze(0).permute(2, 0, 1),
+        delta = self.delta.squeeze(0).permute(2, 0, 1)
+
+        # add 0.5 to show also negative values
+        delta = delta + 0.5
+
+
+        self.logger.experiment.add_image(f"{self.mesh_name}/delta", delta,
                                          global_step=self.current_epoch)
 
     def __log_delta_measure(self):
@@ -243,8 +249,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         yticks = [f"{x:.1f}" for x in grid[..., 2, ...].unique().tolist()[::-1]]
 
         plt.figure()
-        fig = sns.heatmap(scores_grid.transpose(1, 0).flipud().cpu().numpy(),
-                          xticklabels=xticks, yticklabels=yticks, vmin=0.)
+        fig = sns.heatmap(scores_grid.transpose(1, 0).flipud().cpu().clamp(min=1e-12).numpy(),
+                          xticklabels=xticks, yticklabels=yticks, vmin=0., vmax=30.)
         # plt.grid()
         plt.title(title)
         
