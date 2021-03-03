@@ -59,14 +59,15 @@ class PGDOptimizer(torch.optim.Optimizer):
 
                 p_grad = param.grad
                 p_data = param.data.clone()
-                # p_data += alpha * p_grad / self._norms(p_grad)
-                p_data += alpha * p_grad.sign()
+
+                perturbation = alpha * p_grad.sign()
+                p_data += perturbation
+
+                # clamp linf norm to eps
+                p_data = p_data.clamp(min=-eps, max=eps)
 
                 # clip src_tex + param between [0,1]
-                p_data = torch.min(torch.max(p_data, -src_tex), 1 - src_tex)
-
-                p_data *= eps / p_data.norm(float('inf')).clamp(min=eps)
-
+                p_data = src_tex - torch.clamp(src_tex + p_data == 0., 1.)
                 param.data = p_data
 
         return loss
