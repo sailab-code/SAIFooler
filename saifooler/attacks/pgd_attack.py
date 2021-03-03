@@ -67,7 +67,7 @@ class PGDOptimizer(torch.optim.Optimizer):
                 p_data = p_data.clamp(min=-eps, max=eps)
 
                 # clip src_tex + param between [0,1]
-                p_data = src_tex - torch.clamp(src_tex + p_data == 0., 1.)
+                p_data = src_tex - torch.clamp(src_tex + p_data, 0., 1.)
                 param.data = p_data
 
         return loss
