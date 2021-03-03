@@ -183,10 +183,10 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
             attacker.to('cpu')
 
             metrics = {
-                "pytorch_no_attack": before_attack_results[f"{mesh_name}_attacked/pytorch3d_test_accuracy"],
-                "pytorch_attack": after_attack_results[f"{mesh_name}_attacked/pytorch3d_test_accuracy"],
-                "sailenv_no_attack": before_attack_results[f"{mesh_name}_attacked/sailenv_test_accuracy"],
-                "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_test_accuracy"]
+                "pytorch_no_attack": before_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
+                "pytorch_attack": after_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
+                "sailenv_no_attack": before_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"],
+                "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"]
             }
 
             with SummaryWriter(logger.log_dir) as w:
