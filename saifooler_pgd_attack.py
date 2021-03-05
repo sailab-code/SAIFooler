@@ -133,12 +133,12 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                 datamodule = MultipleViewModule(
                     target_class, distance,
                     orientation_elev_range=orientation_elev_range,
-                    orientation_elev_steps=6,
-                    orientation_azim_steps=5,
+                    orientation_elev_steps=10,
+                    orientation_azim_steps=6,
                     light_azim_range=(0., 0.),
                     light_azim_steps=1,
-                    light_elev_range=(70., 90.),
-                    light_elev_steps=1,
+                    light_elev_range=(50., 90.),
+                    light_elev_steps=2,
                     batch_size=30)
             else:
                 datamodule = MultipleViewModule(

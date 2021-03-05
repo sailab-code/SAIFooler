@@ -85,11 +85,11 @@ if __name__ == '__main__':
     # hyperparams
 
     EPS = [0.1, 0.2, 0.3]
-    ALPHA = [0.001, 0.01, 0.1, 1.0]
+    ALPHA = [0.001, 0.1, 1.0]
     CLASSIFIER = ["inception", "mobilenet"]
     SALIENCY = [True, False]
-    SALIENCY_THRESH = [0.01, 0.05, 0.5]
-    TEXTURE_RESCALE = [0.33, 0.66, 1.]
+    SALIENCY_THRESH = [0.05, 0.5]
+    TEXTURE_RESCALE = [1., 0.33]
 
     for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY, TEXTURE_RESCALE):
 
