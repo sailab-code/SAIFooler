@@ -3,6 +3,7 @@ import os
 
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sailenv.agent import Agent
 from torchvision import models
@@ -41,6 +42,9 @@ parser.add_argument('--eps', metavar="epsilon", type=float,
 parser.add_argument('--alpha', metavar="alpha", type=float,
                     required=True,
                     help="Alpha of the PGD attack")
+parser.add_argument('--texture-rescale', metavar="float", type=float,
+                    required=True, default=1.0,
+                    help="Scale factor of the albedo textures (defaults to 1., no rescale)")
 parser.add_argument('--saliency', action="store_true",
                     help="Wheter to use saliency for attack")
 parser.add_argument('--saliency-threshold', metavar="alpha", type=float,
@@ -79,10 +83,11 @@ def generate_agent(args):
 
 
 def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
-
     eps, alpha, model_name, use_saliency = itemgetter('eps', 'alpha', 'model', 'saliency')(params_dict)
 
     saliency_threshold = params_dict['saliency_threshold'] if use_saliency else -1
+    
+    texture_rescale = params_dict['texture_rescale']
 
     if model_name == "inception":
         used_model = models.inception_v3(pretrained=True).to(device)
@@ -117,7 +122,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                                                                     overwrite=True)
 
             for mat_name, mat in mesh_descriptor.textures_path.items():
-                mesh_descriptor.rescale_texture(mat_name, "albedo", 0.33)
+                mesh_descriptor.rescale_texture(mat_name, "albedo", texture_rescale)
 
             if switch_testdata:
                 datamodule = MultipleViewModule(
@@ -163,28 +168,32 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
             attacker.to(device)
 
-            monitor_metric = f'{mesh_name}_attacked/validation_accuracy'
+            monitor_metric = f'{mesh_name}_attacked/sailenv_accuracy'
 
             trainer = pl.Trainer(
                 num_sanity_val_steps=0,
-                max_epochs=100,
+                max_epochs=1000,
                 weights_summary=None,
                 accumulate_grad_batches=datamodule.number_of_batches,
                 check_val_every_n_epoch=5,
                 # progress_bar_refresh_rate=0,
                 gpus=1,
-                callbacks=[EarlyStopping(monitor=monitor_metric, patience=5), ModelCheckpoint(monitor=monitor_metric)],
-                logger=logger
+                callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30), ModelCheckpoint(monitor=monitor_metric, mode='min')],
+                logger=logger,
+                deterministic=True
             )
 
             # test before attack
             before_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
 
+            # print("randomly initializing weights")
+            # attacker.random_initialize_delta()
+
             print(f"Attack begin against {mesh_name}")
             trainer.fit(attacker, datamodule=datamodule)
 
             print("Testing")
-            after_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
+            after_attack_results = trainer.test(attacker, datamodule=datamodule, ckpt_path='best')[0]
 
             print(f"Attack end on {mesh_name}")
             attacker.to('cpu')
@@ -242,6 +251,7 @@ if __name__ == '__main__':
     model_name = args.classifier
     epsilon = args.eps
     alpha = args.alpha
+    texture_rescale = args.texture_rescale
 
     meshes_json_path = args.meshes_definition
 
@@ -255,10 +265,11 @@ if __name__ == '__main__':
         "eps": epsilon,
         "alpha": alpha,
         "model": model_name,
-        "saliency": use_saliency
+        "saliency": use_saliency,
+        "texture_rescale": texture_rescale
     }
 
     if use_saliency:
         params_dict["saliency_threshold"] = saliency_threshold
 
-    experiment("pgd_linf", params_dict, switch_testdata=False)
+    experiment("pgd_linf", params_dict, switch_testdata=True)
