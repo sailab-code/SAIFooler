@@ -241,8 +241,8 @@ def experiment(exp_name, params_dict, args, log_dir="logs", switch_testdata=Fals
             del attacker
             del trainer
             del datamodule
-            del render_module
-            del classifier
+            # del render_module
+            # del classifier
             del mesh_descriptor
 
             torch.cuda.empty_cache()
