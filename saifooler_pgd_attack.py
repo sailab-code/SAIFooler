@@ -101,7 +101,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
     with open(meshes_json_path) as meshes_file:
         meshes_def = json.load(meshes_file)
 
-    logger = TensorBoardLogger(f"{log_dir}/{exp_name}")
+    logger = TensorBoardLogger(f"{log_dir}/pgd_attack", name=exp_name)
 
     os.makedirs(logger.log_dir, exist_ok=True)
     with open(f"{logger.log_dir}/params.json", "w+") as f:
@@ -109,7 +109,7 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
     logger.experiment.add_text(
         "hparams",
-        "\n\n".join([f"**{key}**: {value:.2f}" for key, value in params_dict.items()])
+        "\n\n".join([f"**{key}**: {value}" for key, value in params_dict.items()])
     )
 
     agent = generate_agent(args)
