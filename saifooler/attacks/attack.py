@@ -22,6 +22,11 @@ import torchvision.transforms.functional as TF
 PYTORCH3D_MODULE_NAME = "pytorch3d"
 SAILENV_MODULE_NAME = "sailenv"
 
+TRAIN_PHASE = "train"
+VAL_PHASE = "validation"
+TEST_PHASE = "test"
+
+
 class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
 
@@ -67,9 +72,15 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         self.datamodule = datamodule
 
+        self.batch_handlers = {
+            TRAIN_PHASE: self.handle_train_batch,
+            VAL_PHASE: self.handle_val_batch,
+            TEST_PHASE: self.handle_test_batch
+        }
+
         # call update_textures to set the parameter as texture
         # or else it will not use it at first epoch
-        self.update_textures()
+        self.apply_delta_to_textures()
 
         self.pytorch3d_accuracy = pl.metrics.Accuracy()
         self.sailenv_accuracy = pl.metrics.Accuracy()
@@ -79,17 +90,19 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.p3d_heatmap_data = {}
         self.sailenv_heatmap_data = {}
 
-
     def random_initialize_delta(self):
         torch.nn.init.uniform_(self.delta, -self.epsilon, self.epsilon)
-        self.update_textures()
+        self.apply_delta_to_textures()
 
     def parameters(self, recurse: bool = True):
         return iter([self.delta])
 
-    def update_textures(self):
+    def reset_textures(self):
+        self.mesh.textures.set_maps(self.src_texture.clamp(0., 1.))
+
+    def apply_delta_to_textures(self):
         new_maps = self.src_texture + self.delta
-        self.mesh.textures.set_maps(new_maps.clamp_(0., 1.))
+        self.mesh.textures.set_maps(new_maps.clamp(0., 1.))
 
     def replace_texture_on_descriptor(self):
         for mat_name, new_tex in self.get_textures().items():
@@ -184,18 +197,17 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.pytorch3d_accuracy.reset()
 
     def training_step(self, batch, batch_idx):
-        total_loss, predictions, targets, scores = self.handle_batch(batch, batch_idx, "train", PYTORCH3D_MODULE_NAME)
-        self.pytorch3d_accuracy(predictions, targets)
-        return total_loss
+        batch_out = self.handle_train_batch(batch, batch_idx)
+        loss, predicted, targets, _ = batch_out[PYTORCH3D_MODULE_NAME]
+        self.pytorch3d_accuracy(predicted, targets)
+        return loss
 
     def on_train_batch_end(self, outputs, batch, batch_idx, dataloader_idx):
-        self.update_textures()
+        self.apply_delta_to_textures()
         pass
 
     def on_train_epoch_end(self, outputs):
         self.__log_accuracy(self.pytorch3d_accuracy, "pytorch3d")
-        self.__log_textures()
-        self.__log_delta()
         self.__log_delta_measure()
 
         if self.pytorch3d_accuracy.compute() == 0.:
@@ -204,22 +216,21 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def on_validation_epoch_start(self) -> None:
         self.replace_texture_on_descriptor()
         self.sailenv_module.spawn_obj(self.mesh_descriptor)
+        self.pytorch3d_accuracy.reset()
         self.sailenv_accuracy.reset()
 
         self.__reset_heatmap_data()
 
     def validation_step(self, batch, batch_idx):
-        _, _, _, scores = self.handle_batch(batch, batch_idx, "test", PYTORCH3D_MODULE_NAME)
-        self.p3d_heatmap_data["inputs"].append(batch[0])
-        self.p3d_heatmap_data["scores"].append(scores)
 
-        total_loss, predictions, targets, scores = self.handle_batch(batch, batch_idx, "val", SAILENV_MODULE_NAME)
-        self.sailenv_heatmap_data["inputs"].append(batch[0])
-        self.sailenv_heatmap_data["scores"].append(scores)
-        self.sailenv_accuracy(predictions, targets)
-        return total_loss
+        batch_out = self.handle_val_batch(batch, batch_idx)
+
+        sailenv_loss, _, _, _ = batch_out[SAILENV_MODULE_NAME]
+        return sailenv_loss
 
     def on_validation_epoch_end(self):
+        self.__log_textures()
+        self.__log_delta()
         self.__log_accuracy(self.sailenv_accuracy, "sailenv")
         self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d", "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, "sailenv", "Accuracy on SAILenv")
@@ -264,6 +275,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.logger.experiment.add_figure(f"{self.mesh_name}/accuracy_heatmap/{log_name}", fig.get_figure(),
                                           global_step=self.current_epoch)
 
+    def __log_image(self, image, log_name):
+        self.logger.experiment.add_image(log_name, image.permute((2, 0, 1)), global_step=self.current_epoch)
+
     def on_test_epoch_start(self) -> None:
         self.replace_texture_on_descriptor()
         self.sailenv_module.spawn_obj(self.mesh_descriptor)
@@ -273,17 +287,11 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__reset_heatmap_data()
 
     def test_step(self, batch, batch_idx):
-        total_loss, predictions, targets, scores = self.handle_batch(batch, batch_idx, "test", PYTORCH3D_MODULE_NAME)
-        self.pytorch3d_accuracy(predictions, targets)
-        self.p3d_heatmap_data["inputs"].append(batch[0])
-        self.p3d_heatmap_data["scores"].append(scores)
+        batch_out = self.handle_test_batch(batch, batch_idx)
 
-        total_loss, predictions, targets, scores = self.handle_batch(batch, batch_idx, "test", SAILENV_MODULE_NAME)
-        self.sailenv_accuracy(predictions, targets)
-        self.sailenv_heatmap_data["inputs"].append(batch[0])
-        self.sailenv_heatmap_data["scores"].append(scores)
+        sailenv_loss, _, _, _ = batch_out[SAILENV_MODULE_NAME]
 
-        return total_loss
+        return sailenv_loss
 
     def on_test_epoch_end(self):
         self.__log_accuracy(self.pytorch3d_accuracy, "pytorch3d")
@@ -311,39 +319,86 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.to('cpu')
         super().cpu()
 
-    def handle_batch(self, batch, batch_idx, phase="train", module_name=PYTORCH3D_MODULE_NAME):
-        """
-        N batch size, WxH view size
-        :param batch:
-        :param batch_idx:
-        :return:
-        """
-        render_inputs, targets = batch
-        images, view2tex_maps = self.render_batch(render_inputs, module_name)
-
-        if phase == "train":
-            self.register_hooks(images, batch_idx)
-
-        images_grid = Viewer3D.make_grid(images)
-        self.logger.experiment.add_image(f"{self.mesh_name}/{phase}_{module_name}_batch{batch_idx}",
-                                         images_grid.permute((2, 0, 1)), global_step=self.current_epoch)
-
+    def __classify(self, images):
         # classify images and extract class predictions
-        class_tensors = self.classifier.classify(images)
-        scores, classes_predicted = class_tensors.max(1, keepdim=True)
+        class_tensor = self.classifier.classify(images)
+        return class_tensor
 
-        # mask score for which the prediction is wrong
-        scores[classes_predicted != targets] = 0.
-
+    def __compute_loss(self, class_tensor, classes_predicted, targets, **kwargs):
         # mask images on which the prediction was wrong
         loss_targets = targets.clone()
         loss_targets[classes_predicted != targets] = -1
         loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=-1)
 
         # compute CrossEntropyLoss
-        loss = loss_fn(class_tensors, loss_targets.squeeze(1))
+        ce_loss = loss_fn(class_tensor, loss_targets.squeeze(1))
+        return ce_loss
 
-        return loss, classes_predicted, targets, scores
+    def __render_and_classify(self, render_inputs, targets, module_name):
+        images, _ = self.render_batch(render_inputs, module_name)
+        class_tensor = self.__classify(images)
+        scores, classes_predicted = class_tensor.max(1, keepdim=True)
+
+        loss = self.__compute_loss(class_tensor, classes_predicted, targets)
+
+        return loss, images, classes_predicted, targets, scores
+
+    def handle_train_batch(self, batch, batch_idx):
+        render_inputs, targets = batch
+
+        loss, images, classes_predicted, targets, scores = self.__render_and_classify(
+            render_inputs, targets, PYTORCH3D_MODULE_NAME
+        )
+
+        self.pytorch3d_accuracy(classes_predicted, targets)
+
+        self.register_hooks(images, batch_idx)
+
+        return {
+            PYTORCH3D_MODULE_NAME: (loss, classes_predicted, targets, scores)
+        }
+
+    def handle_val_batch(self, batch, batch_idx):
+        render_inputs, targets = batch
+        p3d_loss, p3d_images, p3d_predicted, p3d_targets, p3d_scores = self.__render_and_classify(
+            render_inputs, targets, PYTORCH3D_MODULE_NAME
+        )
+        self.p3d_heatmap_data["inputs"].append(render_inputs)
+        self.p3d_heatmap_data["scores"].append(p3d_scores)
+
+        self.pytorch3d_accuracy(p3d_predicted, targets)
+
+        images_grid = Viewer3D.make_grid(p3d_images)
+        self.__log_image(images_grid, f"{self.mesh_name}/{PYTORCH3D_MODULE_NAME}_batch{batch_idx}")
+
+        sailenv_loss, sailenv_images, sailenv_predicted, sailenv_targets, sailenv_scores = self.__render_and_classify(
+            render_inputs, targets, SAILENV_MODULE_NAME
+        )
+
+        images_grid = Viewer3D.make_grid(sailenv_images)
+        self.__log_image(images_grid, f"{self.mesh_name}/{SAILENV_MODULE_NAME}_batch{batch_idx}")
+
+        self.sailenv_heatmap_data["inputs"].append(render_inputs)
+        self.sailenv_heatmap_data["scores"].append(sailenv_scores)
+        self.sailenv_accuracy(sailenv_predicted, targets)
+        return {
+            PYTORCH3D_MODULE_NAME: (p3d_loss, p3d_predicted, p3d_targets, p3d_scores),
+            SAILENV_MODULE_NAME: (sailenv_loss, sailenv_predicted, sailenv_targets, sailenv_scores)
+        }
+
+    def handle_test_batch(self, batch, batch_idx):
+        return self.handle_val_batch(batch, batch_idx)
+
+    def handle_batch(self, batch, batch_idx, phase="train"):
+        """
+        N batch size, WxH view size
+        :param batch:
+        :param batch_idx:
+        :return:
+        """
+
+        handler = self.batch_handlers[phase]
+        return handler(batch, batch_idx)
 
     def saliency_hook(self, grad: torch.Tensor, offset):
         try:
