@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY, TEXTURE_RESCALE):
 
-        exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}"
+        exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}_texscale_{tex_scale_}"
 
         params_dict = {"eps": eps_,
                        "alpha": alpha_,
