@@ -226,10 +226,11 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
         batch_out = self.handle_val_batch(batch, batch_idx)
 
-        _, p3d_images, _, _, p3d_scores = batch_out[PYTORCH3D_MODULE_NAME]
+        _, p3d_images, p3d_predicted, p3d_targets, p3d_scores = batch_out[PYTORCH3D_MODULE_NAME]
+        self.__log_image(p3d_images, f"{self.mesh_name}/{PYTORCH3D_MODULE_NAME}_batch{batch_idx}")
         self.p3d_heatmap_data["inputs"].append(render_inputs)
         self.p3d_heatmap_data["scores"].append(p3d_scores)
-        self.__log_image(p3d_images, f"{self.mesh_name}/{PYTORCH3D_MODULE_NAME}_batch{batch_idx}")
+        self.pytorch3d_accuracy(p3d_predicted, p3d_targets)
 
         sailenv_loss, sailenv_images, sailenv_predicted, sailenv_targets, sailenv_scores = batch_out[SAILENV_MODULE_NAME]
         self.__log_image(sailenv_images, f"{self.mesh_name}/{SAILENV_MODULE_NAME}_batch{batch_idx}")
@@ -375,8 +376,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         loss, images, classes_predicted, targets, scores = self.__render_and_classify(
             render_inputs, targets, PYTORCH3D_MODULE_NAME
         )
-
-        self.pytorch3d_accuracy(classes_predicted, targets)
 
         self.register_hooks(images, batch_idx)
 
