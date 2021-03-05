@@ -187,9 +187,8 @@ def experiment(exp_name, params_dict, args, log_dir="logs", switch_testdata=Fals
                 # progress_bar_refresh_rate=0,
                 gpus=1,
                 callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
-                           ModelCheckpoint(monitor=monitor_metric, mode='min')],
-                logger=logger,
-                deterministic=True
+                           ModelCheckpoint(monitor=monitor_metric, mode='min', filename=mesh_name)],
+                logger=logger
             )
 
             # test before attack
