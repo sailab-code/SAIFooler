@@ -143,6 +143,14 @@ class MeshDescriptor:
 
         tex_image.save(self.textures_path[mat_name][texture_name])
 
+    def rescale_texture(self, mat_name, texture_name, scale):
+        tex_image = Image.open(self.textures_path[mat_name][texture_name])
+        width, height = tex_image.size
+        new_width, new_height = int(width * scale), int(height * scale)
+        tex_image = tex_image.resize((new_width, new_height))
+        self.replace_texture(mat_name, texture_name, tex_image)
+        self.mesh = py3dio.load_objs_as_meshes([self.obj_path])
+
     def save_to_zip(self, zip_path=None):
         if zip_path is None:
             zip_path = os.path.join(

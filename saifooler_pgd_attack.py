@@ -116,6 +116,9 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
             mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
                                                                     overwrite=True)
 
+            for mat_name, mat in mesh_descriptor.textures_path.items():
+                mesh_descriptor.rescale_texture(mat_name, "albedo", 0.33)
+
             if switch_testdata:
                 datamodule = MultipleViewModule(
                     target_class, distance,

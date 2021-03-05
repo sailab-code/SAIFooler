@@ -95,6 +95,10 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         for mat_name, new_tex in self.get_textures().items():
             self.mesh_descriptor.replace_texture(mat_name, "albedo", torch.flipud(new_tex))
 
+    def rescale_textures_on_descriptor(self, scale):
+        for mat_name, new_tex in self.get_textures().items():
+            self.mesh_descriptor.rescale_texture(mat_name, "albedo", scale)
+
     def __get_render_module(self, module_name):
         if module_name == PYTORCH3D_MODULE_NAME:
             return self.pytorch3d_module
@@ -217,8 +221,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
 
     def on_validation_epoch_end(self):
         self.__log_accuracy(self.sailenv_accuracy, "sailenv")
-        self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d_val", "Accuracy on PyTorch3D")
-        self.__log_heatmap(self.sailenv_heatmap_data, "sailenv_val", "Accuracy on SAILenv")
         self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d", "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, "sailenv", "Accuracy on SAILenv")
         self.sailenv_module.despawn_obj()
@@ -287,8 +289,6 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__log_accuracy(self.pytorch3d_accuracy, "pytorch3d")
         self.__log_accuracy(self.sailenv_accuracy, "sailenv")
         
-        self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d_test", "Accuracy on PyTorch3D")
-        self.__log_heatmap(self.sailenv_heatmap_data, "sailenv_val", "Accuracy on SAILenv")
         self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d", "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, "sailenv", "Accuracy on SAILenv")
         
