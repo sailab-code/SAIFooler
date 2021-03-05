@@ -78,10 +78,6 @@ def generate_agent(args):
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    dev, use_cuda = args.device, args.cuda
-    print("CUDA Available: ", torch.cuda.is_available())
-    device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
-
     # hyperparams
 
     EPS = [0.1, 0.2, 0.3]
@@ -116,5 +112,4 @@ if __name__ == '__main__':
                 exp_name = exp_name_base
 
             model_name = classifier_
-            experiment(exp_name, params_dict)
-
+            experiment(exp_name, params_dict, args, log_dir="logs_05_march")

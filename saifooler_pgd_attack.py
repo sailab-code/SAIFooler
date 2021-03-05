@@ -81,12 +81,15 @@ def generate_agent(args):
     return agent
 
 
-
-def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
+def experiment(exp_name, params_dict, args, log_dir="logs", switch_testdata=False):
     eps, alpha, model_name, use_saliency = itemgetter('eps', 'alpha', 'model', 'saliency')(params_dict)
 
+    dev, use_cuda = args.device, args.cuda
+    print("CUDA Available: ", torch.cuda.is_available())
+    device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
+
     saliency_threshold = params_dict['saliency_threshold'] if use_saliency else -1
-    
+
     texture_rescale = params_dict['texture_rescale']
 
     if model_name == "inception":
@@ -183,7 +186,8 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
                 check_val_every_n_epoch=5,
                 # progress_bar_refresh_rate=0,
                 gpus=1,
-                callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30), ModelCheckpoint(monitor=monitor_metric, mode='min')],
+                callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
+                           ModelCheckpoint(monitor=monitor_metric, mode='min')],
                 logger=logger,
                 deterministic=True
             )
@@ -246,12 +250,9 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
         agent.delete()
         print(f"Experiment {exp_name} completed! \n\n\n")
 
+
 if __name__ == '__main__':
     args = parser.parse_args()
-
-    dev, use_cuda = args.device, args.cuda
-    print("CUDA Available: ", torch.cuda.is_available())
-    device = torch.device(f"cuda:{dev}" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
     model_name = args.classifier
     epsilon = args.eps
