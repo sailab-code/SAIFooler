@@ -98,6 +98,10 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
 
     logger = TensorBoardLogger(f"{log_dir}/{exp_name}")
 
+    os.makedirs(logger.log_dir, exist_ok=True)
+    with open(f"{logger.log_dir}/params.json", "w+") as f:
+        json.dump(params_dict, f, indent=4)
+
     agent = generate_agent(args)
     try:
         classifier = ImageNetClassifier(used_model)
