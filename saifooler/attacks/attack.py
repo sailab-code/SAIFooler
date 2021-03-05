@@ -219,6 +219,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__log_accuracy(self.sailenv_accuracy, "sailenv")
         self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d_val", "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, "sailenv_val", "Accuracy on SAILenv")
+        self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d", "Accuracy on PyTorch3D")
+        self.__log_heatmap(self.sailenv_heatmap_data, "sailenv", "Accuracy on SAILenv")
         self.sailenv_module.despawn_obj()
 
     def __reset_heatmap_data(self):
@@ -287,6 +289,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         
         self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d_test", "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, "sailenv_val", "Accuracy on SAILenv")
+        self.__log_heatmap(self.p3d_heatmap_data, "pytorch3d", "Accuracy on PyTorch3D")
+        self.__log_heatmap(self.sailenv_heatmap_data, "sailenv", "Accuracy on SAILenv")
         
         self.sailenv_module.despawn_obj()
 
