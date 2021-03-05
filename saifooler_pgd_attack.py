@@ -107,6 +107,11 @@ def experiment(exp_name, params_dict, log_dir="logs", switch_testdata=False):
     with open(f"{logger.log_dir}/params.json", "w+") as f:
         json.dump(params_dict, f, indent=4)
 
+    logger.experiment.add_text(
+        "hparams",
+        "\n\n".join([f"**{key}**: {value:.2f}" for key, value in params_dict.items()])
+    )
+
     agent = generate_agent(args)
     try:
         classifier = ImageNetClassifier(used_model)
