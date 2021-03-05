@@ -7,5 +7,14 @@
       -13,
       52
     ]
+  },
+  "remote_controller": {
+    "path": "./meshes/remote_controller",
+    "distance": 0.20,
+    "target_class": 761,
+    "orientation_elev_range": [
+      10,
+      90
+    ]
   }
 }
