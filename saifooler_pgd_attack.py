@@ -278,4 +278,4 @@ if __name__ == '__main__':
     if use_saliency:
         params_dict["saliency_threshold"] = saliency_threshold
 
-    experiment("pgd_linf", params_dict, switch_testdata=True)
+    experiment("pgd_linf", params_dict, args, switch_testdata=True)
