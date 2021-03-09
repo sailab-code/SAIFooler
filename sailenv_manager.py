@@ -45,7 +45,7 @@ class SAILenvManager:
         if self.prefix is not None:
             command.append(self.prefix)
 
-        command.extend([self.sailenv_exe, "--port", self.port])
+        command.extend([self.sailenv_exe, f"--port={self.port}"])
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.sailenv_home)
 
         # wait a second to be sure the executable has started
