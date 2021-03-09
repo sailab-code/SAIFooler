@@ -101,6 +101,7 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
 
     logger = TensorBoardLogger(f"{log_dir}/pgd_attack", name=exp_name)
 
+
     if not os.path.exists(os.path.join(f"{log_dir}/pgd_attack", exp_name)):
         os.makedirs(logger.log_dir, exist_ok=True)
         with open(f"{logger.log_dir}/params.json", "w+") as f:
@@ -112,6 +113,7 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
         )
 
         agent = generate_agent(args)
+
         try:
             classifier = ImageNetClassifier(used_model)
             render_module = RenderModule()
@@ -124,6 +126,7 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
 
             mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
                                                                     overwrite=True)
+
 
             for mat_name, mat in mesh_descriptor.textures_path.items():
                 mesh_descriptor.rescale_texture(mat_name, "albedo", texture_rescale)

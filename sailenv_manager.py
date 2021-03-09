@@ -36,7 +36,7 @@ class SAILenvManager:
         curr_platform = platform.system()
         self.sailenv_exe = os.path.join(sailenv_home, executables_per_platform[curr_platform])
         self.port = port
-
+        self.sailenv_home = sailenv_home
         self.prefix = prefix
         self.process = None
 
@@ -46,7 +46,7 @@ class SAILenvManager:
             command.append(self.prefix)
 
         command.extend([self.sailenv_exe, "--port", self.port])
-        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.sailenv_home)
 
         # wait a second to be sure the executable has started
         try:

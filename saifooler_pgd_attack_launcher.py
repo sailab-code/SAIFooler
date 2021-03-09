@@ -81,7 +81,6 @@ def generate_agent(args):
 if __name__ == '__main__':
     args = parser.parse_args()
 
-
     meshes_json_path = args.meshes_definition
 
     with open(meshes_json_path) as meshes_file:
@@ -89,19 +88,20 @@ if __name__ == '__main__':
 
     # hyperparams
 
-    EPS = [0.1, 0.2, 0.3]
-    ALPHA = [0.001, 0.1, 1.0]
+    EPS = [0.1, 0.5, 0.05]
+    ALPHA = [0.001, 0.01, 0.1]
     CLASSIFIER = ["inception", "mobilenet"]
     SALIENCY = [True, False]
-    SALIENCY_THRESH = [0.05, 0.5]
-    TEXTURE_RESCALE = [1., 0.33]
+    SALIENCY_THRESH = [0.05, 0.2]
+    TEXTURE_RESCALE = [1., 0.33, 0.1]
 
-    sailenv_manager = SAILenvManager()
+    sailenv_manager = SAILenvManager(sailenv_home="/media/users/tiezzi/Projects/inProgress/SAILenv", port=str(args.port))
 
     for mesh_name, mesh_def in meshes_def.items():
-        mesh_def["mesh_name"] = mesh_name
+        mesh_def["name"] = mesh_name
 
-        for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY, TEXTURE_RESCALE):
+        for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY,
+                                                                        TEXTURE_RESCALE):
 
             exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}_texscale_{tex_scale_}"
 
@@ -129,5 +129,6 @@ if __name__ == '__main__':
 
                 sailenv_manager.start()
                 sleep(5)
-                experiment(exp_name, mesh_def, params_dict, args, log_dir=f"logs_05_march/{mesh_name}", switch_testdata=False)
+                experiment(exp_name, mesh_def, params_dict, args, log_dir=f"logs_09_march/{mesh_name}",
+                           switch_testdata=False)
                 sailenv_manager.stop()
