@@ -1,5 +1,7 @@
 import json
 import os
+from time import sleep
+
 import torch
 import pytorch_lightning as pl
 from sailenv.agent import Agent
@@ -26,6 +28,7 @@ from saifooler.saliency.saliency_estimator import SaliencyEstimator
 from itertools import product
 
 from saifooler_pgd_attack import experiment
+from sailenv_manager import SAILenvManager
 
 parser = argparse.ArgumentParser(description="Settings for PGD Attack to obj textures")
 parser.add_argument('--meshes_definition', metavar='meshes_definition', type=str,
@@ -78,6 +81,12 @@ def generate_agent(args):
 if __name__ == '__main__':
     args = parser.parse_args()
 
+
+    meshes_json_path = args.meshes_definition
+
+    with open(meshes_json_path) as meshes_file:
+        meshes_def = json.load(meshes_file)
+
     # hyperparams
 
     EPS = [0.1, 0.2, 0.3]
@@ -87,29 +96,38 @@ if __name__ == '__main__':
     SALIENCY_THRESH = [0.05, 0.5]
     TEXTURE_RESCALE = [1., 0.33]
 
-    for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY, TEXTURE_RESCALE):
+    sailenv_manager = SAILenvManager()
 
-        exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}_texscale_{tex_scale_}"
+    for mesh_name, mesh_def in meshes_def.items():
+        mesh_def["mesh_name"] = mesh_name
 
-        params_dict = {"eps": eps_,
-                       "alpha": alpha_,
-                       "model": classifier_,
-                       "saliency": saliency_,
-                       "texture_rescale": tex_scale_
-                       }
+        for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY, TEXTURE_RESCALE):
 
-        if saliency_:
-            saliency_thresh_ = SALIENCY_THRESH
-        else:
-            saliency_thresh_ = [-1]
+            exp_name_base = f"eps_{eps_}__alpha_{alpha_}__model_{classifier_}_saliency_{saliency_}_texscale_{tex_scale_}"
 
-        for s_th_ in saliency_thresh_:
+            params_dict = {"eps": eps_,
+                           "alpha": alpha_,
+                           "model": classifier_,
+                           "saliency": saliency_,
+                           "texture_rescale": tex_scale_
+                           }
 
             if saliency_:
-                exp_name = exp_name_base + f"_saliency_thresh_{s_th_}"
-                params_dict["saliency_threshold"] = s_th_
+                saliency_thresh_ = SALIENCY_THRESH
             else:
-                exp_name = exp_name_base
+                saliency_thresh_ = [-1]
 
-            model_name = classifier_
-            experiment(exp_name, params_dict, args, log_dir="logs_05_march")
+            for s_th_ in saliency_thresh_:
+
+                if saliency_:
+                    exp_name = exp_name_base + f"_saliency_thresh_{s_th_}"
+                    params_dict["saliency_threshold"] = s_th_
+                else:
+                    exp_name = exp_name_base
+
+                model_name = classifier_
+
+                sailenv_manager.start()
+                sleep(5)
+                experiment(exp_name, mesh_def, params_dict, args, log_dir=f"logs_05_march/{mesh_name}", switch_testdata=False)
+                sailenv_manager.stop()
