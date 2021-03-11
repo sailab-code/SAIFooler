@@ -102,149 +102,148 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
     logger = TensorBoardLogger(f"{log_dir}/pgd_attack", name=exp_name)
 
 
-    if not os.path.exists(os.path.join(f"{log_dir}/pgd_attack", exp_name)):
-        os.makedirs(logger.log_dir, exist_ok=True)
-        with open(f"{logger.log_dir}/params.json", "w+") as f:
-            json.dump(params_dict, f, indent=4)
-    
-        logger.experiment.add_text(
-            "hparams",
-            "\n\n".join([f"**{key}**: {value}" for key, value in params_dict.items()])
+    os.makedirs(logger.log_dir, exist_ok=True)
+    with open(f"{logger.log_dir}/params.json", "w+") as f:
+        json.dump(params_dict, f, indent=4)
+
+    logger.experiment.add_text(
+        "hparams",
+        "\n\n".join([f"**{key}**: {value}" for key, value in params_dict.items()])
+    )
+
+    agent = generate_agent(args)
+
+    try:
+        classifier = ImageNetClassifier(used_model)
+        render_module = RenderModule()
+        sailenv_module = SailenvModule(agent, render_module.lights)
+
+        mesh_name = mesh_def["name"]
+        mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
+        distance = mesh_def["distance"]
+        orientation_elev_range = mesh_def.get("orientation_elev_range", [-90., 90.])
+
+        mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
+                                                                overwrite=True)
+
+
+        for mat_name, mat in mesh_descriptor.textures_path.items():
+            mesh_descriptor.rescale_texture(mat_name, "albedo", texture_rescale)
+
+        if switch_testdata:
+            datamodule = MultipleViewModule(
+                target_class, distance,
+                orientation_elev_range=orientation_elev_range,
+                orientation_elev_steps=6,
+                orientation_azim_steps=5,
+                light_azim_range=(0., 0.),
+                light_azim_steps=1,
+                light_elev_range=(50., 90.),
+                light_elev_steps=1,
+                batch_size=30)
+        else:
+            datamodule = MultipleViewModule(
+                target_class, distance,
+                orientation_elev_range=orientation_elev_range,
+                orientation_elev_steps=10,
+                orientation_azim_steps=6,
+                light_azim_range=(0., 0.),
+                light_azim_steps=1,
+                light_elev_range=(50., 90.),
+                light_elev_steps=2,
+                batch_size=30)
+
+        datamodule.setup()
+
+        saliency_estimator = SaliencyEstimator(
+            mesh_descriptor,
+            classifier,
+            render_module,
+            sailenv_module,
+            datamodule
+        )
+        saliency_estimator.to(device)
+
+        if use_saliency:
+            view_saliency_maps = saliency_estimator.estimate_view_saliency_map()
+        else:
+            view_saliency_maps = [None, None]
+
+        attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, eps, alpha, datamodule,
+                             saliency_maps=view_saliency_maps[1], saliency_threshold=saliency_threshold)
+
+        attacker.to(device)
+
+        monitor_metric = f'{mesh_name}_attacked/sailenv_accuracy'
+
+        trainer = pl.Trainer(
+            num_sanity_val_steps=0,
+            max_epochs=1000,
+            weights_summary=None,
+            accumulate_grad_batches=datamodule.number_of_batches,
+            check_val_every_n_epoch=5,
+            # progress_bar_refresh_rate=0,
+            gpus=1,
+            callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
+                       ModelCheckpoint(monitor=monitor_metric, mode='min', filename=mesh_name)],
+            logger=logger
         )
 
-        agent = generate_agent(args)
+        # test before attack
+        before_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
 
-        try:
-            classifier = ImageNetClassifier(used_model)
-            render_module = RenderModule()
-            sailenv_module = SailenvModule(agent, render_module.lights)
+        # print("randomly initializing weights")
+        # attacker.random_initialize_delta()
 
-            mesh_name = mesh_def["name"]
-            mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
-            distance = mesh_def["distance"]
-            orientation_elev_range = mesh_def.get("orientation_elev_range", [-90., 90.])
+        print(f"Attack begin against {mesh_name}")
+        trainer.fit(attacker, datamodule=datamodule)
 
-            mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
-                                                                    overwrite=True)
+        print("Testing")
+        after_attack_results = trainer.test(attacker, datamodule=datamodule, ckpt_path='best')[0]
 
+        print(f"Attack end on {mesh_name}")
+        attacker.to('cpu')
 
-            for mat_name, mat in mesh_descriptor.textures_path.items():
-                mesh_descriptor.rescale_texture(mat_name, "albedo", texture_rescale)
+        metrics = {
+            "pytorch_no_attack": before_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
+            "pytorch_attack": after_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
+            "sailenv_no_attack": before_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"],
+            "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"]
+        }
 
-            if switch_testdata:
-                datamodule = MultipleViewModule(
-                    target_class, distance,
-                    orientation_elev_range=orientation_elev_range,
-                    orientation_elev_steps=6,
-                    orientation_azim_steps=5,
-                    light_azim_range=(0., 0.),
-                    light_azim_steps=1,
-                    light_elev_range=(50., 90.),
-                    light_elev_steps=1,
-                    batch_size=30)
-            else:
-                datamodule = MultipleViewModule(
-                    target_class, distance,
-                    orientation_elev_range=orientation_elev_range,
-                    orientation_elev_steps=10,
-                    orientation_azim_steps=6,
-                    light_azim_range=(0., 0.),
-                    light_azim_steps=1,
-                    light_elev_range=(50., 90.),
-                    light_elev_steps=2,
-                    batch_size=30)
+        with SummaryWriter(logger.log_dir) as w:
+            w.add_hparams(params_dict, metrics)
 
-            datamodule.setup()
+        plot = sns.barplot(
+            x=list(metrics.keys()),
+            y=list(metrics.values())
+        )
+        plot.set(ylim=(0., 1.))
+        fig = plot.get_figure()
+        logger.experiment.add_figure(f"{mesh_name}_attacked/summary", fig)
 
-            saliency_estimator = SaliencyEstimator(
-                mesh_descriptor,
-                classifier,
-                render_module,
-                sailenv_module,
-                datamodule
-            )
-            saliency_estimator.to(device)
+        with open(f"{logger.log_dir}/summary.json", "w+") as f:
+            json.dump(metrics, f, indent=4)
 
-            if use_saliency:
-                view_saliency_maps = saliency_estimator.estimate_view_saliency_map()
-            else:
-                view_saliency_maps = [None, None]
+        logger.experiment.add_text(
+            "summary",
+            "\n\n".join([f"**{key}**: {value:.2f}" for key, value in metrics.items()])
+        )
 
-            attacker = PGDAttack(mesh_descriptor, render_module, sailenv_module, classifier, eps, alpha, datamodule,
-                                 saliency_maps=view_saliency_maps[1], saliency_threshold=saliency_threshold)
+        # logger.experiment.add_hparams(params_dict, metrics)
+        # log to Tensorboard HParams
 
-            attacker.to(device)
+        logger.experiment.flush()
 
-            monitor_metric = f'{mesh_name}_attacked/sailenv_accuracy'
+        del attacker
+        del trainer
+        del datamodule
+        del mesh_descriptor
 
-            trainer = pl.Trainer(
-                num_sanity_val_steps=0,
-                max_epochs=1000,
-                weights_summary=None,
-                accumulate_grad_batches=datamodule.number_of_batches,
-                check_val_every_n_epoch=5,
-                # progress_bar_refresh_rate=0,
-                gpus=1,
-                callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
-                           ModelCheckpoint(monitor=monitor_metric, mode='min', filename=mesh_name)],
-                logger=logger
-            )
-
-            # test before attack
-            before_attack_results = trainer.test(attacker, datamodule=datamodule)[0]
-
-            # print("randomly initializing weights")
-            # attacker.random_initialize_delta()
-
-            print(f"Attack begin against {mesh_name}")
-            trainer.fit(attacker, datamodule=datamodule)
-
-            print("Testing")
-            after_attack_results = trainer.test(attacker, datamodule=datamodule, ckpt_path='best')[0]
-
-            print(f"Attack end on {mesh_name}")
-            attacker.to('cpu')
-
-            metrics = {
-                "pytorch_no_attack": before_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
-                "pytorch_attack": after_attack_results[f"{mesh_name}_attacked/pytorch3d_accuracy"],
-                "sailenv_no_attack": before_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"],
-                "sailenv_attack": after_attack_results[f"{mesh_name}_attacked/sailenv_accuracy"]
-            }
-
-            with SummaryWriter(logger.log_dir) as w:
-                w.add_hparams(params_dict, metrics)
-
-            plot = sns.barplot(
-                x=list(metrics.keys()),
-                y=list(metrics.values())
-            )
-            plot.set(ylim=(0., 1.))
-            fig = plot.get_figure()
-            logger.experiment.add_figure(f"{mesh_name}_attacked/summary", fig)
-
-            with open(f"{logger.log_dir}/summary.json", "w+") as f:
-                json.dump(metrics, f, indent=4)
-
-            logger.experiment.add_text(
-                "summary",
-                "\n\n".join([f"**{key}**: {value:.2f}" for key, value in metrics.items()])
-            )
-
-            # logger.experiment.add_hparams(params_dict, metrics)
-            # log to Tensorboard HParams
-
-            logger.experiment.flush()
-
-            del attacker
-            del trainer
-            del datamodule
-            del mesh_descriptor
-
-            torch.cuda.empty_cache()
-        finally:
-            agent.delete()
-            print(f"Experiment {exp_name} completed! \n\n\n")
+        torch.cuda.empty_cache()
+    finally:
+        agent.delete()
+        print(f"Experiment {exp_name} completed! \n\n\n")
 
 
 if __name__ == '__main__':

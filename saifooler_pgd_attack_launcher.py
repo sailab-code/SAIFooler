@@ -134,11 +134,10 @@ if __name__ == '__main__':
                 if os.path.exists(full_path_log_dir):
                     print(f"Experiment {full_path_log_dir} already available...")
                     continue
-                else:
 
-                    sailenv_manager.start()
-                    sleep(5)
-                    experiment(exp_name, mesh_def, params_dict, args, log_dir=log_dir,
-                               switch_testdata=False)
-                    sailenv_manager.stop()
-                    sleep(5)
+                sailenv_manager.start()
+                sleep(5)
+                experiment(exp_name, mesh_def, params_dict, args, log_dir=log_dir,
+                           switch_testdata=False)
+                sailenv_manager.stop()
+                sleep(5)
