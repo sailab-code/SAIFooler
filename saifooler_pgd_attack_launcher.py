@@ -95,7 +95,8 @@ if __name__ == '__main__':
     SALIENCY_THRESH = [0.05, 0.2]
     TEXTURE_RESCALE = [0.33]
 
-    sailenv_manager = SAILenvManager(sailenv_home="/media/users/tiezzi/Projects/inProgress/SAILenv", port=str(args.port))
+    sailenv_manager = SAILenvManager(sailenv_home="/media/users/tiezzi/Projects/inProgress/SAILenv",
+                                     port=str(args.port))
 
     for mesh_name, mesh_def in meshes_def.items():
         mesh_def["name"] = mesh_name
@@ -127,8 +128,16 @@ if __name__ == '__main__':
 
                 model_name = classifier_
 
+                log_dir = f"logs_09_march/{mesh_name}"
+                full_path_log_dir = os.path.join(f"{log_dir}/pgd_attack", exp_name)
+
+                if os.path.exists(full_path_log_dir):
+                    print(f"Experiment {full_path_log_dir} already available...")
+                    continue
+
                 sailenv_manager.start()
                 sleep(5)
-                experiment(exp_name, mesh_def, params_dict, args, log_dir=f"logs_09_march/{mesh_name}",
+                experiment(exp_name, mesh_def, params_dict, args, log_dir=log_dir,
                            switch_testdata=False)
                 sailenv_manager.stop()
+                sleep(5)
