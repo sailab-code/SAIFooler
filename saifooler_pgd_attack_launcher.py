@@ -89,11 +89,11 @@ if __name__ == '__main__':
     # hyperparams
 
     EPS = [0.1, 0.5, 0.05]
-    ALPHA = [0.001, 0.01, 0.1]
+    ALPHA = [0.01]
     CLASSIFIER = ["inception", "mobilenet"]
     SALIENCY = [True, False]
     SALIENCY_THRESH = [0.05, 0.2]
-    TEXTURE_RESCALE = [1., 0.33, 0.1]
+    TEXTURE_RESCALE = [0.33]
 
     sailenv_manager = SAILenvManager(sailenv_home="/media/users/tiezzi/Projects/inProgress/SAILenv", port=str(args.port))
 

@@ -141,7 +141,7 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
                     light_azim_steps=1,
                     light_elev_range=(50., 90.),
                     light_elev_steps=1,
-                    batch_size=30)
+                    batch_size=60)
             else:
                 datamodule = MultipleViewModule(
                     target_class, distance,
@@ -150,9 +150,9 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
                     orientation_azim_steps=6,
                     light_azim_range=(0., 0.),
                     light_azim_steps=1,
-                    light_elev_range=(50., 90.),
-                    light_elev_steps=2,
-                    batch_size=30)
+                    light_elev_range=(75., 90.),
+                    light_elev_steps=1,
+                    batch_size=60)
 
             datamodule.setup()
 
