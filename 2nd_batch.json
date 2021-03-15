@@ -1,4 +1,13 @@
 {
+  "tennis_racket": {
+    "path": "./meshes/tennis_racket",
+    "distance": 0.6,
+    "target_class": 752,
+    "orientation_elev_range": [
+      25,
+      90
+    ]
+  },
   "lamp_floor": {
     "path": "./meshes/lamp_floor",
     "distance": 1.25,
@@ -14,15 +23,6 @@
     "orientation_elev_range": [
       -5,
       20
-    ]
-  },
-  "tennis_racket": {
-    "path": "./meshes/tennis_racket",
-    "distance": 0.6,
-    "target_class": 752,
-    "orientation_elev_range": [
-      25,
-      90
     ]
   }
 }
