@@ -136,8 +136,8 @@ if __name__ == '__main__':
                     continue
 
                 sailenv_manager.start()
-                sleep(5)
+                sleep(15)
                 experiment(exp_name, mesh_def, params_dict, args, log_dir=log_dir,
                            switch_testdata=False)
                 sailenv_manager.stop()
-                sleep(5)
+                sleep(15)
