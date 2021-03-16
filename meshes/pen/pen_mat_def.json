@@ -1,0 +1,7 @@
+{
+  "pen_01": {
+    "metallic": "pen_01_MetallicSmoothness.png",
+    "albedo": "pen_01_AlbedoTransparency.png",
+    "normal": "pen_01_Normal.png"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "vaacum_cleaner_01": {
+    "metallic": "vaacum_cleaner_01_MetallicSmoothness.png",
+    "albedo": "vaacum_cleaner_01_AlbedoTransparency.png",
+    "normal": "vaacum_cleaner_01_Normal.png"
+  },
+  "vaacum_cleaner_01_bottom": {
+    "metallic": "vaacum_cleaner_01_bottom_MetallicSmoothness.png",
+    "albedo": "vaacum_cleaner_01_bottom_AlbedoTransparency.png",
+    "normal": "vaacum_cleaner_01_bottom_Normal.png"
+  },
+  "vaacum_cleaner_01_cord": {
+    "metallic": "vaacum_cleaner_01_cord_MetallicSmoothness.png",
+    "albedo": "vaacum_cleaner_01_cord_AlbedoTransparency.png",
+    "normal": "vaacum_cleaner_01_cord_Normal.png"
+  },
+  "vaacum_cleaner_01_cover": {
+    "metallic": "vaacum_cleaner_01_cover_MetallicSmoothness.png",
+    "albedo": "vaacum_cleaner_01_cover_AlbedoTransparency.png",
+    "normal": "vaacum_cleaner_01_cover_Normal.png"
+  }
+}

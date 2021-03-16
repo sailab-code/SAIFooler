@@ -1,0 +1,7 @@
+{
+  "ewer_01": {
+    "metallic": "ewer_01_MetallicSmoothness.png",
+    "albedo": "ewer_01_AlbedoTransparency.png",
+    "normal": "ewer_01_Normal.png"
+  }
+}

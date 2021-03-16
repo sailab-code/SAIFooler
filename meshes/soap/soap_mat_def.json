@@ -1,0 +1,7 @@
+{
+  "soap_01": {
+    "metallic": "soap_01_MetallicSmoothness.png",
+    "albedo": "soap_01_AlbedoTransparency.png",
+    "normal": "soap_01_Normal.png"
+  }
+}

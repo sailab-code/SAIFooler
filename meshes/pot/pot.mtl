@@ -1,0 +1,26 @@
+# Blender MTL File: 'workspace.blend'
+# Material Count: 2
+
+newmtl pot_01
+Ns 323.999994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.354744 0.274145
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump pot_01_Normal.png
+map_Kd pot_01_AlbedoTransparency.png
+
+newmtl pot_01_leaves
+Ns 35.999996
+Ka 1.000000 1.000000 1.000000
+Kd 0.078787 0.173355 0.021253
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump pot_01_leaves_Normal.png
+map_Kd pot_01_leaves_AlbedoTransparency.png

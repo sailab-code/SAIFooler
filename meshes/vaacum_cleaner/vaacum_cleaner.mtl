@@ -1,0 +1,50 @@
+# Blender MTL File: 'workspace.blend'
+# Material Count: 4
+
+newmtl vaacum_cleaner_01
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.070545 0.191627 0.050626
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump vaacum_cleaner_01_Normal.png
+map_Kd vaacum_cleaner_01_AlbedoTransparency.png
+
+newmtl vaacum_cleaner_01_bottom
+Ns 56.250000
+Ka 1.000000 1.000000 1.000000
+Kd 0.070545 0.191627 0.050626
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump vaacum_cleaner_01_bottom_Normal.png
+map_Kd vaacum_cleaner_01_bottom_AlbedoTransparency.png
+
+newmtl vaacum_cleaner_01_cord
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.025394 0.025394 0.025394
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump vaacum_cleaner_01_cord_Normal.png
+map_Kd vaacum_cleaner_01_cord_AlbedoTransparency.png
+
+newmtl vaacum_cleaner_01_cover
+Ns 900.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.063721 0.063721 0.063721
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump vaacum_cleaner_01_cover_Normal.png
+map_Kd vaacum_cleaner_01_cover_AlbedoTransparency.png

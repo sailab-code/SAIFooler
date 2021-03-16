@@ -1,0 +1,17 @@
+{
+  "laptop_01": {
+    "metallic": "laptop_01_MetallicSmoothness.png",
+    "albedo": "laptop_01_AlbedoTransparency.png",
+    "normal": "laptop_01_Normal.png"
+  },
+  "laptop_01_keyboard": {
+    "metallic": "laptop_01_keyboard_MetallicSmoothness.png",
+    "albedo": "laptop_01_keyboard_AlbedoTransparency.png",
+    "normal": "laptop_01_keyboard_Normal.png"
+  },
+  "laptop_01_screen": {
+    "metallic": "laptop_01_screen_MetallicSmoothness.png",
+    "albedo": "laptop_01_screen_AlbedoTransparency.png",
+    "normal": "laptop_01_screen_Normal.png"
+  }
+}

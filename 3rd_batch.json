@@ -1,0 +1,20 @@
+{
+  "toilet": {
+    "path": "./meshes/toilet",
+    "distance": 1.2,
+    "target_class": 861,
+    "orientation_elev_range": [
+      0,
+      10
+    ]
+  },
+  "plunger": {
+    "path": "./meshes/plunger",
+    "distance": 0.75,
+    "target_class": 731,
+    "orientation_elev_range": [
+      -52,
+      80
+    ]
+  }
+}

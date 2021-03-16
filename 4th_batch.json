@@ -1,0 +1,20 @@
+{
+  "ewer": {
+    "path": "./meshes/ewer",
+    "distance": 0.3,
+    "target_class": 849,
+    "orientation_elev_range": [
+      -70,
+      70
+    ]
+  },
+  "pot": {
+    "path": "./meshes/pot",
+    "distance": 0.4,
+    "target_class": 738,
+    "orientation_elev_range": [
+      0,
+      50
+    ]
+  }
+}

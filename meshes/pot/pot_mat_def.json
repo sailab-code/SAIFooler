@@ -1,0 +1,12 @@
+{
+  "pot_01": {
+    "metallic": "pot_01_MetallicSmoothness.png",
+    "albedo": "pot_01_AlbedoTransparency.png",
+    "normal": "pot_01_Normal.png"
+  },
+  "pot_01_leaves": {
+    "metallic": "pot_01_leaves_MetallicSmoothness.png",
+    "albedo": "pot_01_leaves_AlbedoTransparency.png",
+    "normal": "pot_01_leaves_Normal.png"
+  }
+}

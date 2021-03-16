@@ -1,0 +1,7 @@
+{
+  "plunger_01": {
+    "metallic": "plunger_01_MetallicSmoothness.png",
+    "albedo": "plunger_01_AlbedoTransparency.png",
+    "normal": "plunger_01_Normal.png"
+  }
+}
