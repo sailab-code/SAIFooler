@@ -9,3 +9,4 @@ meshes/attacks/
 logs/
 meshes/**/*.zip
 heatmaps/
+logs*/
