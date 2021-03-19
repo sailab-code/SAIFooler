@@ -28,6 +28,8 @@ import torchvision.transforms.functional as TF
 from PIL import Image, ImageEnhance
 import matplotlib.pyplot as plt
 
+import numpy as np
+
 parser = argparse.ArgumentParser(description="Settings for PGD Attack to obj textures")
 parser.add_argument('--meshes_definition', metavar='meshes_definition', type=str,
                     required=True,
@@ -43,7 +45,7 @@ parser.add_argument('--alpha', metavar="alpha", type=float,
                     required=True,
                     help="Alpha of the PGD attack")
 parser.add_argument('--texture-rescale', metavar="float", type=float,
-                    required=True, default=1.0,
+                    required=False, default=1.0,
                     help="Scale factor of the albedo textures (defaults to 1., no rescale)")
 parser.add_argument('--saliency', action="store_true",
                     help="Wheter to use saliency for attack")
@@ -75,7 +77,7 @@ def generate_agent(args):
     agent.register()
 
     # put white background on unity scene
-    agent.change_main_camera_clear_flags(255, 255, 255)
+    agent.change_main_camera_clear_flags(0, 0, 0)
 
     agent.change_scene("object_view/scene")
     return agent
@@ -115,8 +117,6 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
 
     try:
         classifier = ImageNetClassifier(used_model)
-        render_module = RenderModule()
-        sailenv_module = SailenvModule(agent, render_module.lights)
 
         mesh_name = mesh_def["name"]
         mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
@@ -126,6 +126,10 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
         mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"{logger.log_dir}/{mesh_name}_attacked",
                                                                 overwrite=True)
 
+        background = torch.tensor(np.array(Image.open(mesh_def["background"])), dtype=torch.float32) / 255
+
+        render_module = RenderModule(background=background)
+        sailenv_module = SailenvModule(agent, render_module.lights, background=background)
 
         for mat_name, mat in mesh_descriptor.textures_path.items():
             mesh_descriptor.rescale_texture(mat_name, "albedo", texture_rescale)

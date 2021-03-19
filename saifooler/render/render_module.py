@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 import pytorch_lightning as pl
+import torch
 from pytorch3d.renderer import look_at_view_transform, FoVPerspectiveCameras, PointLights, DirectionalLights, \
     RasterizationSettings, MeshRenderer, MeshRasterizer, SoftPhongShader, camera_position_from_spherical_angles
 from pytorch3d.structures import Meshes
@@ -79,6 +80,15 @@ class RenderModule(pl.LightningModule):
             )
         )
 
+        self.background = kwargs.get("background", None)
+
+    def impose_over_background(self, image):
+        if self.background is None:
+            return image
+
+        condition = (image == torch.ones((1,1,3)).to(image))
+        return torch.where(condition, self.background, image)
+
     def update_camera(self, r, t):
         self.cameras.R, self.cameras.T = r.to(self.device), t.to(self.device)
 
@@ -108,7 +118,8 @@ class RenderModule(pl.LightningModule):
         else:
             mesh_ext = mesh
 
-        return self.renderer(mesh_ext)[..., :3]
+        img = self.renderer(mesh_ext)[..., :3]
+        return self.impose_over_background(img)
 
     def get_view2tex_map(self, mesh):
         if not isinstance(mesh, Meshes):
@@ -122,6 +133,7 @@ class RenderModule(pl.LightningModule):
     def to(self, device):
         self.renderer.to(device)
         self.cameras.to(device)
+        self.background = self.background.to(device)
         super().to(device)
 
     def cuda(self, device=None):

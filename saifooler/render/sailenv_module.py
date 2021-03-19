@@ -17,10 +17,21 @@ class SailenvModule(pl.LightningModule):
     def __init__(self, agent: Agent,
                  lights: DirectionalLights,
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.agent: Agent = agent
         self.set_unity_lights(lights)
         self.obj_id = None
+
+        self.background = kwargs.get("background", None)
+
+
+    def impose_over_background(self, image):
+        if self.background is None:
+            return image
+
+        # condition = (image == torch.zeros((1,1,3)).to(image))
+        condition = torch.isclose(image, torch.zeros((1,1,3)).to(image), atol=1e-2)
+        return torch.where(condition, self.background, image)
 
     def set_unity_lights(self, lights):
         main_r, main_g, main_b = (lights.diffuse_color[0] * 255).to(dtype=torch.uint8)
@@ -57,9 +68,11 @@ class SailenvModule(pl.LightningModule):
     def render(self, *_):
         frame = torch.tensor(self.agent.get_frame()["main"])
 
-        return torch.fliplr(frame).clone().unsqueeze(0).to(self.device)
+        img = torch.fliplr(frame).clone().unsqueeze(0).to(self.device)
+        return self.impose_over_background(img)
 
     def to(self, device):
+        self.background = self.background.to(device)
         super().to(device)
 
     def cuda(self, device=None):
