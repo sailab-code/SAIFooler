@@ -3,6 +3,7 @@
     "path": "./meshes/ewer",
     "distance": 0.3,
     "target_class": 849,
+    "background": "./backgrounds/room.png",
     "orientation_elev_range": [
       -70,
       70
@@ -10,6 +11,7 @@
   },
   "pot": {
     "path": "./meshes/pot",
+    "background": "./backgrounds/room.png",
     "distance": 0.4,
     "target_class": 738,
     "orientation_elev_range": [
