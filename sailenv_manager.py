@@ -66,6 +66,7 @@ class SAILenvManager:
 
     def change_scene(self, scene):
         agent = Agent(port=int(self.port))
+        agent.register()
         agent.change_scene(scene)
 
     def stop(self):
