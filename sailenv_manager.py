@@ -2,6 +2,8 @@ import os
 import platform
 import subprocess
 
+from sailenv.agent import Agent
+
 executables_per_platform = {
     "Windows": "SAILenv.exe",
     "Linux": "SAILenv.run",
@@ -61,6 +63,10 @@ class SAILenvManager:
         except subprocess.TimeoutExpired:
             # if timeout expired, it means that SAILenv is still running
             return True
+
+    def change_scene(self, scene):
+        agent = Agent(port=int(self.port))
+        agent.change_scene(scene)
 
     def stop(self):
         self.process.kill()

@@ -99,6 +99,11 @@ if __name__ == '__main__':
                                      port=str(args.port))
 
     for mesh_name, mesh_def in meshes_def.items():
+
+        sailenv_manager.start()
+        sailenv_manager.change_scene("object_view/scene")
+        sleep(10)
+
         mesh_def["name"] = mesh_name
 
         for eps_, alpha_, classifier_, saliency_, tex_scale_ in product(EPS, ALPHA, CLASSIFIER, SALIENCY,
@@ -135,9 +140,8 @@ if __name__ == '__main__':
                     print(f"Experiment {full_path_log_dir} already available...")
                     continue
 
-                sailenv_manager.start()
-                sleep(15)
                 experiment(exp_name, mesh_def, params_dict, args, log_dir=log_dir,
                            switch_testdata=False)
-                sailenv_manager.stop()
-                sleep(15)
+
+        sailenv_manager.stop()
+        sleep(10)
