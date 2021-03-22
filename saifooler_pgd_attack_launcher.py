@@ -101,7 +101,7 @@ if __name__ == '__main__':
     for mesh_name, mesh_def in meshes_def.items():
 
         sailenv_manager.start()
-        sleep(5)
+        sleep(20)
         sailenv_manager.change_scene("object_view/scene")
         sleep(10)
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
                 model_name = classifier_
 
-                log_dir = f"logs_09_march/{mesh_name}"
+                log_dir = f"test/{mesh_name}"
                 full_path_log_dir = os.path.join(f"{log_dir}/pgd_attack", exp_name)
 
                 if os.path.exists(full_path_log_dir):
@@ -145,4 +145,4 @@ if __name__ == '__main__':
                            switch_testdata=False)
 
         sailenv_manager.stop()
-        sleep(10)
+        sleep(15)
