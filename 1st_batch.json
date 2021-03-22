@@ -3,7 +3,7 @@
     "path": "./meshes/candle",
     "distance": 0.2,
     "target_class": 470,
-    "background": "./backgrounds/room.png",
+    "background": "./backgrounds/white.png",
     "orientation_elev_range": [
       -13,
       52
@@ -13,10 +13,20 @@
     "path": "./meshes/remote_controller",
     "distance": 0.20,
     "target_class": 761,
-    "background": "./backgrounds/room.png",
+    "background": "./backgrounds/black.png",
     "orientation_elev_range": [
       10,
       90
+    ]
+  },
+  "toilet_paper": {
+    "path": "./meshes/toilet_paper",
+    "distance": 0.2,
+    "target_class": 999,
+    "background": "./backgrounds/room.png",
+    "orientation_elev_range": [
+      -13,
+      52
     ]
   }
 }

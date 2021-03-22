@@ -3,7 +3,7 @@
     "path": "./meshes/tennis_racket",
     "distance": 0.6,
     "target_class": 752,
-    "background": "./backgrounds/room.png",
+    "background": "./backgrounds/black.png",
     "orientation_elev_range": [
       25,
       90
@@ -11,7 +11,7 @@
   },
   "lamp_floor": {
     "path": "./meshes/lamp_floor",
-    "background": "./backgrounds/room.png",
+    "background": "./backgrounds/white.png",
     "distance": 1.25,
     "target_class": 619,
     "orientation_elev_range": [
@@ -20,7 +20,7 @@
     ]},
   "table_living_room": {
     "path": "./meshes/table_living_room",
-    "background": "./backgrounds/room.png",
+    "background": "./backgrounds/white.png",
     "distance": 2.0,
     "target_class": 532,
     "orientation_elev_range": [
