@@ -79,7 +79,7 @@ def generate_agent(args):
     # put white background on unity scene
     agent.change_main_camera_clear_flags(0, 0, 0)
 
-    agent.change_scene("object_view/scene")
+    # agent.change_scene("object_view/scene")
     return agent
 
 
