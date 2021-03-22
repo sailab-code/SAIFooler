@@ -90,6 +90,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.p3d_heatmap_data = {}
         self.sailenv_heatmap_data = {}
 
+        self.p3d_predict_data = []
+        self.sailenv_predict_data = []
+
     def random_initialize_delta(self):
         torch.nn.init.uniform_(self.delta, -self.epsilon, self.epsilon)
         self.apply_delta_to_textures()
@@ -230,12 +233,14 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__log_image(p3d_images, f"{self.mesh_name}/{PYTORCH3D_MODULE_NAME}_batch{batch_idx}")
         self.p3d_heatmap_data["inputs"].append(render_inputs)
         self.p3d_heatmap_data["scores"].append(p3d_scores)
+        self.p3d_predict_data.append(p3d_predicted)
         self.pytorch3d_accuracy(p3d_predicted, p3d_targets)
 
         sailenv_loss, sailenv_images, sailenv_predicted, sailenv_targets, sailenv_scores = batch_out[SAILENV_MODULE_NAME]
         self.__log_image(sailenv_images, f"{self.mesh_name}/{SAILENV_MODULE_NAME}_batch{batch_idx}")
         self.sailenv_heatmap_data["inputs"].append(render_inputs)
         self.sailenv_heatmap_data["scores"].append(sailenv_scores)
+        self.sailenv_predict_data.append(sailenv_predicted)
         self.sailenv_accuracy(sailenv_predicted, sailenv_targets)
 
         return sailenv_loss
@@ -243,11 +248,43 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
     def on_validation_epoch_end(self):
         self.__log_textures()
         self.__log_delta()
+
         self.__log_accuracy(self.pytorch3d_accuracy, PYTORCH3D_MODULE_NAME)
         self.__log_accuracy(self.sailenv_accuracy, SAILENV_MODULE_NAME)
+
         self.__log_heatmap(self.p3d_heatmap_data, PYTORCH3D_MODULE_NAME, "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, SAILENV_MODULE_NAME, "Accuracy on SAILenv")
+
+        self.__log_predictions(self.p3d_predict_data, PYTORCH3D_MODULE_NAME, "Predictions on PyTorch3D")
+        self.__log_predictions(self.sailenv_predict_data, SAILENV_MODULE_NAME, "Predictions on SAILenv")
+
         self.sailenv_module.despawn_obj()
+
+    def __reset_prediction_data(self):
+        self.p3d_predict_data = []
+        self.sailenv_predict_data = []
+
+    def __log_predictions(self, prediction_data, log_name, title):
+        predictions = torch.cat(prediction_data, 0)
+        counts = predictions.unique(return_counts=True)
+
+        plt.figure()
+
+        categories = [self.classifier.get_class_label(idx) for idx in counts[0].cpu().numpy().tolist()]
+
+        data = {
+            'category': categories,
+            'count': counts[1].cpu().numpy()
+        }
+
+        fig = sns.barplot(x='category', y='count', data=data)
+
+        plt.title(title)
+
+        self.logger.experiment.add_figure(f"{self.mesh_name}/predictions_barplot/{log_name}", fig.get_figure(),
+                                          global_step=self.current_epoch)
+
+        return None
 
     def __reset_heatmap_data(self):
         self.p3d_heatmap_data = {
@@ -299,6 +336,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.sailenv_accuracy.reset()
 
         self.__reset_heatmap_data()
+        self.__reset_prediction_data()
 
     def test_step(self, batch, batch_idx):
         render_inputs, _ = batch
@@ -309,6 +347,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__log_image(p3d_images, f"{self.mesh_name}/{PYTORCH3D_MODULE_NAME}_batch{batch_idx}")
         self.p3d_heatmap_data["inputs"].append(render_inputs)
         self.p3d_heatmap_data["scores"].append(p3d_scores)
+        self.p3d_predict_data.append(p3d_predicted)
         self.pytorch3d_accuracy(p3d_predicted, p3d_targets)
 
         sailenv_loss, sailenv_images, sailenv_predicted, sailenv_targets, sailenv_scores = batch_out[
@@ -316,6 +355,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.__log_image(sailenv_images, f"{self.mesh_name}/{SAILENV_MODULE_NAME}_batch{batch_idx}")
         self.sailenv_heatmap_data["inputs"].append(render_inputs)
         self.sailenv_heatmap_data["scores"].append(sailenv_scores)
+        self.sailenv_predict_data.append(sailenv_predicted)
         self.sailenv_accuracy(sailenv_predicted, sailenv_targets)
 
         return sailenv_loss
@@ -326,6 +366,9 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         
         self.__log_heatmap(self.p3d_heatmap_data, PYTORCH3D_MODULE_NAME, "Accuracy on PyTorch3D")
         self.__log_heatmap(self.sailenv_heatmap_data, SAILENV_MODULE_NAME, "Accuracy on SAILenv")
+
+        self.__log_predictions(self.p3d_predict_data, PYTORCH3D_MODULE_NAME, "Predictions on PyTorch3D")
+        self.__log_predictions(self.sailenv_predict_data, SAILENV_MODULE_NAME, "Predictions on SAILenv")
 
         self.__log_textures()
         
@@ -369,6 +412,8 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         scores, classes_predicted = class_tensor.max(1, keepdim=True)
 
         loss = self.__compute_loss(class_tensor, classes_predicted, targets)
+
+        scores[classes_predicted != targets] = 0.
 
         return loss, images, classes_predicted, targets, scores
 
