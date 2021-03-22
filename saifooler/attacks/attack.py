@@ -278,8 +278,12 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         }
 
         fig = sns.barplot(x='category', y='count', data=data)
+        
+        for item in fig.get_xticklabels():
+            item.set_rotation(45)
 
         plt.title(title)
+        plt.tight_layout()
 
         self.logger.experiment.add_figure(f"{self.mesh_name}/predictions_barplot/{log_name}", fig.get_figure(),
                                           global_step=self.current_epoch)
