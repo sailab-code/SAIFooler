@@ -74,7 +74,7 @@ def generate_agent(args):
     # put white background on unity scene
     agent.change_main_camera_clear_flags(255, 255, 255)
 
-    agent.change_scene("object_view/scene")
+    #agent.change_scene("object_view/scene")
     return agent
 
 
@@ -101,6 +101,7 @@ if __name__ == '__main__':
     for mesh_name, mesh_def in meshes_def.items():
 
         sailenv_manager.start()
+        sleep(5)
         sailenv_manager.change_scene("object_view/scene")
         sleep(10)
 
