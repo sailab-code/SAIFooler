@@ -79,7 +79,7 @@ def generate_agent(args):
     # put white background on unity scene
     agent.change_main_camera_clear_flags(0, 0, 0)
 
-    agent.change_scene("object_view/scene")
+    # agent.change_scene("object_view/scene")
     return agent
 
 
@@ -188,7 +188,7 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
             check_val_every_n_epoch=5,
             check_val_every_n_epoch=25,
             # progress_bar_refresh_rate=0,
-            gpus=1,
+            gpus=[dev],
             callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
             callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=4),
                        ModelCheckpoint(monitor=monitor_metric, mode='min', filename=mesh_name)],
