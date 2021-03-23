@@ -185,11 +185,9 @@ def experiment(exp_name, mesh_def, params_dict, args, log_dir="logs", switch_tes
             max_epochs=1000,
             weights_summary=None,
             accumulate_grad_batches=datamodule.number_of_batches,
-            check_val_every_n_epoch=5,
             check_val_every_n_epoch=25,
             # progress_bar_refresh_rate=0,
             gpus=[dev],
-            callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=30),
             callbacks=[EarlyStopping(monitor=monitor_metric, mode='min', patience=4),
                        ModelCheckpoint(monitor=monitor_metric, mode='min', filename=mesh_name)],
             logger=logger
