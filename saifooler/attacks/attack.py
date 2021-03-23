@@ -223,6 +223,7 @@ class SaifoolerAttack(pl.LightningModule, metaclass=abc.ABCMeta):
         self.sailenv_accuracy.reset()
 
         self.__reset_heatmap_data()
+        self.__reset_prediction_data()
 
     def validation_step(self, batch, batch_idx):
         render_inputs, _ = batch
