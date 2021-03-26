@@ -55,10 +55,11 @@ class SaliencyEstimator:
         view2tex_maps = view2tex_maps if view2tex_maps is not None else torch.cat(view2tex_maps_list, 0)
         return images, view2tex_maps
 
-    def estimate_view_saliency_map(self):
+    def estimate_view_saliency_map(self, return_views=False):
         self.sailenv_module.spawn_obj(self.mesh_descriptor)
 
         view_saliencies = [[], []]
+        views = [[], []]
 
         view2tex_maps = None
         for idx, render_module in tqdm(enumerate([self.p3d_module, self.sailenv_module]), position=0, desc="Module"):
@@ -68,11 +69,20 @@ class SaliencyEstimator:
             for batch in tqdm(self.data_module.test_dataloader(), position=1, desc="Batch"):
                 images, view2tex_maps = self.render_batch(render_module, batch, view2tex_maps)
                 view_saliency_maps = self.compute_batch_view_saliency_maps(images)
+                if return_views:
+                    views[idx].append(images)
+
                 view_saliencies[idx].append(view_saliency_maps)
 
             view_saliencies[idx] = torch.cat(view_saliencies[idx], 0)
 
+            if return_views:
+                views[idx] = torch.cat(views[idx], 0)
+
         self.sailenv_module.despawn_obj()
+
+        if return_views:
+            return view_saliencies, views
 
         return view_saliencies
 
