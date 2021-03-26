@@ -202,6 +202,7 @@ if __name__ == '__main__':
             tex_plt = plt.figure()
             plt.imshow(blended.cpu().numpy())
             plt.title(f"Texture: $\\tau_S={saliency_threshold:.2f}$")
+            plt.tight_layout()
             #plt.show()
 
             tex_dict = {
@@ -217,21 +218,29 @@ if __name__ == '__main__':
 
             render_input = render_inputs[idx]
 
+            sailenv_module.spawn_obj(mesh_repl)
+
             distance, camera_azim, camera_elev = render_input[:3]
-            render_module.look_at_mesh(distance, camera_azim, camera_elev)
+            sailenv_module.look_at_mesh(distance, camera_azim, camera_elev)
 
             lights_azim, lights_elev = render_input[3:]
-            render_module.set_lights_direction(lights_azim, lights_elev)
+            sailenv_module.set_lights_direction(lights_azim, lights_elev)
 
-            image = render_module.render(mesh_repl.mesh)
+            image = sailenv_module.render(mesh_descriptor.mesh)
+
+            sailenv_module.despawn_obj()
 
             mesh_plt = plt.figure()
             plt.title(f"Object: $\\tau_S={saliency_threshold:.2f}$")
             plt.imshow(image.squeeze(0).cpu().numpy())
+            plt.tight_layout()
             #plt.show()
 
             tex_plt.savefig(f"{imgs_path}/tex_{idx}.pdf")
             mesh_plt.savefig(f"{imgs_path}/mesh_{idx}.pdf")
+
+            plt.close(tex_plt)
+            plt.close(mesh_plt)
 
 
 
