@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
         datamodule.setup()
 
-        mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"./saliency_tmp",
+        mesh_descriptor = MeshDescriptor(mesh_path).copy_to_dir(f"./saliency_tmp/{mesh_name}",
                                                                 overwrite=True)
 
         classifier = ImageNetClassifier(used_model)
@@ -163,12 +163,12 @@ if __name__ == '__main__':
 
         render_inputs = datamodule.train_dataloader().dataset.tensors[0]
 
-        imgs_path = f"./saliency_tmp/images/{mesh_name}"
+        imgs_path = f"./saliency_tmp/{mesh_name}/images/"
         os.makedirs(imgs_path, exist_ok=True)
 
         for idx, tex_saliency, view in zip(range(tex_saliencies.shape[0]), tex_saliencies, views):
 
-            mesh_repl = mesh_descriptor.copy_to_dir(f"./saliency_tmp/repl", overwrite=True)
+            mesh_repl = mesh_descriptor.copy_to_dir(f"./saliency_tmp/{mesh_name}/repl", overwrite=True)
 
             tex_saliency = tex_saliency.T
 
@@ -205,16 +205,16 @@ if __name__ == '__main__':
             plt.tight_layout()
             #plt.show()
 
+            mesh_repl.mesh = mesh_repl.mesh.to(device)
+            mesh_repl.mesh.textures.set_maps(blended.unsqueeze(0).to(device))
+
             tex_dict = {
                 tex_name: texture.cpu()
                 for tex_name, texture in mesh_repl.mesh.textures.get_textures().items()
             }
 
-            for mat_name, _ in tex_dict.items():
-                mesh_repl.replace_texture(mat_name, "albedo", torch.flipud(blended))
-
-            mesh_repl.mesh = mesh_repl.mesh.to(device)
-            mesh_repl.mesh.textures.set_maps(blended.unsqueeze(0).to(device))
+            for mat_name, new_tex in tex_dict.items():
+                mesh_repl.replace_texture(mat_name, "albedo", torch.flipud(new_tex))
 
             render_input = render_inputs[idx]
 
@@ -236,8 +236,8 @@ if __name__ == '__main__':
             plt.tight_layout()
             #plt.show()
 
-            tex_plt.savefig(f"{imgs_path}/tex_{idx}.pdf")
-            mesh_plt.savefig(f"{imgs_path}/mesh_{idx}.pdf")
+            tex_plt.savefig(f"{imgs_path}/ts{saliency_threshold:.2f}_tex_{idx}.pdf")
+            mesh_plt.savefig(f"{imgs_path}/ts{saliency_threshold:.2f}_mesh_{idx}.pdf")
 
             plt.close(tex_plt)
             plt.close(mesh_plt)
