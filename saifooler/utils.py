@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 
 from torch.utils.tensorboard import SummaryWriter
@@ -37,3 +39,13 @@ class SummaryWriter(SummaryWriter):
             for k, v in metric_dict.items():
                 w_hp.add_scalar(k, v)
 
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
