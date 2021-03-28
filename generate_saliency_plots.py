@@ -144,22 +144,60 @@ if __name__ == '__main__':
         saliency_estimator.to(device)
 
 
-        tex_saliencies, views = saliency_estimator.estimate_saliency_map(return_views=True)
+        tex_saliencies, view_saliencies, views = saliency_estimator.estimate_saliency_map(
+            return_view_saliencies=True, return_views=True
+        )
 
-        tex_saliencies = tex_saliencies[0]
+        save_obj = {
+            "saliency_threshold": saliency_threshold,
+            "textures": {
+                tex_name: tex.cpu()
+                for tex_name, tex in mesh_descriptor.mesh.textures.get_textures().items()
+            },
+            "views": {
+                "p3d": views[0].cpu(),
+                "sailenv": views[1].cpu()
+            },
+            "view_saliency": {
+                "p3d": view_saliencies[0].cpu(),
+                "sailenv": view_saliencies[1].cpu()
+            },
+            "tex_saliency": {
+                "p3d": tex_saliencies[0].cpu(),
+                "sailenv": tex_saliencies[1].cpu()
+            }
+        }
 
-        saliency_maps = tex_saliencies.clone()
-        # rescale saliency maps to 0..1 range
+        os.makedirs(f"./saliency_tmp/ts{saliency_threshold:.2f}/", exist_ok=True)
+        torch.save(save_obj, f"./saliency_tmp/ts{saliency_threshold:.2f}/{mesh_name}.tch")
+        continue
+
+
+
+
+        """tex_saliencies = tex_saliencies[1]
+        view_saliencies = view_saliencies[1]
+        views = views[1]"""
+
+
+
+
+        """# rescale saliency maps to 0..1 range
         for idx, saliency_map in enumerate(saliency_maps):
             saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
             saliency_map[saliency_map < saliency_threshold] = 0.
             saliency_maps[idx] = saliency_map
 
         tex_saliencies = saliency_maps.clone()
+        """
 
-        views = views[0]
 
 
+
+
+
+
+        """
 
         render_inputs = datamodule.train_dataloader().dataset.tensors[0]
 
@@ -191,8 +229,8 @@ if __name__ == '__main__':
             blended.paste(heatmap_img, (0, 0), heatmap_img)
 
             #blended = Image.blend(heatmap_img, tex_img, 0.9)
-            """brightness_enhance = ImageEnhance.Brightness(blended)
-            blended = brightness_enhance.enhance(3.5)"""
+            # brightness_enhance = ImageEnhance.Brightness(blended)
+            # blended = brightness_enhance.enhance(3.5)
 
             blended = blended.convert('RGB')
 
@@ -242,6 +280,7 @@ if __name__ == '__main__':
             plt.close(tex_plt)
             plt.close(mesh_plt)
 
+    """
 
 
 

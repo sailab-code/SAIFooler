@@ -86,10 +86,11 @@ class SaliencyEstimator:
 
         return view_saliencies
 
-    def estimate_saliency_map(self, return_views=True):
+    def estimate_saliency_map(self, return_view_saliencies=False, return_views=False):
         self.sailenv_module.spawn_obj(self.mesh_descriptor)
 
         tex_saliencies = [[], []]
+        view_saliencies = [[], []]
         views = [[], []]
 
         view2tex_maps = None
@@ -102,18 +103,32 @@ class SaliencyEstimator:
                 view_saliency_maps = self.compute_batch_view_saliency_maps(images)
                 tex_saliency_maps = self.convert_view2tex_saliency_maps(view_saliency_maps, view2tex_maps)
                 tex_saliencies[idx].append(tex_saliency_maps)
+
+                if return_view_saliencies:
+                    view_saliencies[idx].append(view_saliency_maps)
+
                 if return_views:
                     views[idx].append(images)
 
             tex_saliencies[idx] = torch.cat(tex_saliencies[idx], 0)
+
+            if return_view_saliencies:
+                view_saliencies[idx] = torch.cat(view_saliencies[idx], 0)
+
             if return_views:
                 views[idx] = torch.cat(views[idx], 0)
 
         self.sailenv_module.despawn_obj()
-        if return_views:
-            return tex_saliencies, views
 
-        return tex_saliencies
+        ret = (tex_saliencies,)
+
+        if return_view_saliencies:
+            ret = (*ret, view_saliencies)
+
+        if return_views:
+            ret = (*ret, views)
+
+        return ret
 
     def to(self, device):
         self.mesh = self.mesh.to(device)
