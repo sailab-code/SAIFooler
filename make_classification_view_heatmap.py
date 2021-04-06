@@ -16,6 +16,8 @@ from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from saifooler.render.sailenv_module import SailenvModule
 from tqdm import tqdm
 
+from sailenv_manager import SAILenvManager
+
 
 #def tqdm(*args, **kwargs):
 #    return args[0]
@@ -105,6 +107,11 @@ def classify_module(render_module, classifier, mesh, data_module):
     classes_predicted = torch.cat(classes_predicted_list, 0)
     inputs = torch.cat(inputs_list, 0)
 
+    plt.figure(figsize=(7, 7))
+    plt.imshow(images[0].cpu().squeeze(0).numpy())
+    plt.title("unity")
+    plt.show()
+
     return torch.cat((inputs.to(confidences), classes_predicted, confidences), 1)
 
 
@@ -130,7 +137,7 @@ def classify_and_draw_heatmap(render_module, classifier, mesh, data_module, pref
 
     plt.grid()
     plt.title(f"Mesh: {mesh_name}")
-    plt.savefig(f"./heatmaps/{prefix}_{mesh_name}.png")
+    plt.savefig(f"./heatmaps/new/{prefix}_{mesh_name}.png")
 
 
 
@@ -164,7 +171,17 @@ if __name__ == '__main__':
     classifier.to(device)
     used_model.eval()
 
-    skip_meshes_before = 0
+    render_module = RenderModule()
+    render_module.to(device)
+
+    sailenv_module = SailenvModule(agent, render_module.lights)
+    sailenv_module.to(device)
+
+    skip_meshes_before = 1
+
+    manager = SAILenvManager(sailenv_home="C:\\Users\\enric\\wkspaces\\sailab_lve\\Build\\windows")
+
+    # manager.start()
 
     with torch.no_grad():
         i = 0
@@ -175,28 +192,27 @@ if __name__ == '__main__':
 
             mesh_path, target_class = mesh_def["path"], mesh_def["target_class"]
             distance = mesh_def["distance"]
+            orientation_elev_range = mesh_def["orientation_elev_range"]
             mesh_descriptor = MeshDescriptor(mesh_path)
             data_module = MultipleViewModule(
                 target_class, distance,
-                orientation_elev_steps=15,
-                orientation_azim_steps=15,
-                light_azim_steps=3,
-                light_elev_steps=3,
+                orientation_elev_steps=20,
+                orientation_azim_steps=10,
+                orientation_elev_range=orientation_elev_range,
+                light_azim_steps=1,
+                light_elev_steps=1,
                 batch_size=45)
             data_module.setup()
 
-            render_module = RenderModule()
-            render_module.to(device)
             mesh_descriptor.mesh = mesh_descriptor.mesh.to(device)
             mesh_descriptor.mesh.textures = mesh_descriptor.mesh.textures.to(device)
 
             if test_on_unity:
                 original_zip_path = mesh_descriptor.save_to_zip()
-                sailenv_module = SailenvModule(agent, original_zip_path, f"{mesh_name}/sailenv", data_module,
-                                                           classifier, render_module)
-                sailenv_module.spawn_obj()
+                sailenv_module.spawn_obj(mesh_descriptor)
                 classify_and_draw_heatmap(sailenv_module, classifier, mesh_descriptor.mesh, data_module, "sailenv")
                 sailenv_module.despawn_obj()
-            else:
-                classify_and_draw_heatmap(render_module, classifier, mesh_descriptor.mesh, data_module, "pytorch3d")
+
+            classify_and_draw_heatmap(render_module, classifier, mesh_descriptor.mesh, data_module, "pytorch3d")
+    # manager.stop()
 

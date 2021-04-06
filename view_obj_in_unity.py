@@ -2,6 +2,7 @@ import signal
 
 import torch
 import pytorch_lightning as pl
+import torchvision
 from torchvision import models
 import sys
 
@@ -12,10 +13,10 @@ from saifooler.data_modules.orientation_data_module import OrientationDataModule
 from saifooler.classifiers.image_net_classifier import ImageNetClassifier
 from sailenv.agent import Agent
 import matplotlib.pyplot as plt
-import cv2
 
 from saifooler.render.sailenv_module import SailenvModule
 from saifooler.viewers.viewer import Viewer3D
+import torchvision.transforms.functional as TF
 
 use_cuda = False
 dev = 0
@@ -23,7 +24,7 @@ model_name = "inception"
 #model_name = "mobilenet"
 
 
-mesh_path = "./meshes/table_living_room"
+mesh_path = "./test/sal_meshes/candle"
 
 target_class = 532
 epsilon = 0.66
@@ -56,7 +57,7 @@ if __name__ == '__main__':
 
     render_module = RenderModule()
     classifier = ImageNetClassifier(used_model)
-    data_module = OrientationDataModule(target_class, 10., 2., 30)
+    data_module = OrientationDataModule(target_class, 10., 2., 30.)
 
     print("Generating agent...")
     try:
@@ -69,24 +70,31 @@ if __name__ == '__main__':
         agent.change_main_camera_clear_flags(255, 255, 255)
         agent.change_scene("object_view/scene")
         unity_render = SailenvModule(agent, render_module.lights)
-        unity_render.look_at_mesh(2., 10., 30.)
+        unity_render.look_at_mesh(torch.tensor(0.2), torch.tensor(10.), torch.tensor(30.))
         unity_render.spawn_obj(mesh_object)
-        main_img = unity_render.render()
+        main_img = unity_render.render().squeeze(0)
 
         plt.figure(figsize=(7,7))
-        plt.imshow(main_img.squeeze(0))
+        plt.imshow(main_img)
         plt.title("unity")
         plt.show()
 
         plt.figure(figsize=(7,7))
-        render_module.look_at_mesh(2., 10., 30.)
+        render_module.look_at_mesh(0.2, 10., 30.)
         img = render_module.render(mesh_object.mesh)
         img = img.squeeze(0)
         plt.imshow(img)
         plt.title("pytorch")
         plt.show()
+
+        main_img = TF.to_pil_image(main_img.permute((2,0,1)))
+        img = TF.to_pil_image(img.permute((2,0,1)))
+
+        main_img.save("./unity.png")
+        img.save("./p3d.png")
+
     finally:
-        input("Press to continue")
+        # input("Press to continue")
         unity_render.despawn_obj()
         agent.delete()
 
