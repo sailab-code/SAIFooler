@@ -10,3 +10,9 @@ logs/
 meshes/**/*.zip
 heatmaps/
 logs*/
+test/
+saliency_tmp/
+submission/
+saliency_textures
+*.png
+kde_mesh/
