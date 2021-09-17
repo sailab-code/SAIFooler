@@ -1,0 +1,10 @@
+python=3.7
+torchvision
+pytorch
+torchaudio
+cudatoolkit=10.2
+pytorch-lightning
+seaborn
+scikit-image
+sailenv
+pytorch3d # compile install from source in ./pytorch3d
