@@ -95,7 +95,7 @@ if __name__ == '__main__':
     SALIENCY_THRESH = [0.05, 0.2]
     TEXTURE_RESCALE = [0.33]
 
-    sailenv_manager = SAILenvManager(sailenv_home="/media/users/tiezzi/Projects/inProgress/SAILenv",
+    sailenv_manager = SAILenvManager(sailenv_home="<SAILENV_PATH>",
                                      port=str(args.port))
 
     for mesh_name, mesh_def in meshes_def.items():
