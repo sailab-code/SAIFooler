@@ -30,3 +30,9 @@ This is the launcher for the experiments described in the paper. It can be execu
 ## Requirements
 
 Required python packages are listed into ```requirements.txt```. To execute the experiments, it is also needed to have a working installation of SAILenv. You can find installation instructions for SAILenv at their homepage <http://sailab.diism.unisi.it/sailenv>. 
+
+
+Acknowledgement
+---------------
+
+This software was developed in the context of some of the activities of the PRIN 2017 project RexLearn, funded by the Italian Ministry of Education, University and Research (grant no. 2017TWNMH2).This software was developed in the context of some of the activities of the PRIN 2017 project RexLearn, funded by the Italian Ministry of Education, University and Research (grant no. 2017TWNMH2).
