@@ -5,6 +5,8 @@ This repository contains the code used in the experiments for the paper _"Messin
 ## Article information
 You can find the article on arXiv at this link <https://arxiv.org/abs/2109.08465>.
 
+[Proceedings](https://ieeexplore.ieee.org/document/9680120)
+
 ## Citation 
 Bibtex citation (TBD)
 
